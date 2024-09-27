@@ -9,6 +9,8 @@ from app.lazy import ServiceFactory
 app = Sanic(__name__)
 app.blueprint(api)
 
+from app import middlewares
+
 
 @app.after_server_start
 def _init_app_context(app_):
