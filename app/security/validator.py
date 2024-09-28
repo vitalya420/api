@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from app.exceptions import InvalidPhoneNumber
 
@@ -6,10 +7,10 @@ ukr_phone = re.compile(r'^(?:\+380|380|0)?(39|50|75|63|66|67|68|73|91|92|93|94|9
 # phone_pattern = re.compile(r'^\+?[1-9]\d{0,2}[-.\s]?($?\d{1,4}?$?[-.\s]?)?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}$')
 
 
-def validate_ukrainian_phone_number(phone: str, *, raise_exception=True) -> bool:
+def validate_ukrainian_phone_number(phone: str, *, raise_exception=True, context: Optional[dict] = None) -> bool:
     is_valid = not not ukr_phone.match(phone)
     if not is_valid and raise_exception:
-        raise InvalidPhoneNumber(f"Phone number is invalid: {phone}")
+        raise InvalidPhoneNumber(f"Phone number is invalid: {phone}", context=context)
     return is_valid
 
 

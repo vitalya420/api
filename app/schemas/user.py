@@ -9,9 +9,14 @@ class UserBase(BaseModel):
     phone: Optional[str] = None
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
     phone: str
 
 
 class User(UserBase):
     id: int
+
+
+class UserCodeConfirm(BaseModel):
+    otp: str
+    phone: str

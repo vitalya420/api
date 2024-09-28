@@ -19,3 +19,9 @@ class InvalidPhoneNumber(SanicException):
     message = "The phone number is invalid."
     status_code = HTTPStatus.BAD_REQUEST
     quiet = True
+
+
+class SmsCooldown(SanicException):
+    message = "SmsCooldown has been exceeded."
+    status_code = HTTPStatus.SERVICE_UNAVAILABLE
+    quiet = True
