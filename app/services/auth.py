@@ -9,7 +9,7 @@ from . import services
 from app.models import OTP
 from app.utils.rand import random_code
 from app.tasks import send_sms_to_phone
-from ..exceptions import SmsCooldown
+from app.exceptions import SmsCooldown
 
 
 @services('auth')

@@ -30,7 +30,7 @@ def otp_context_required(f):
     @wraps(f)
     async def decorated(request: Request, body: UserCodeConfirm, *args, **kwargs):
         auth_service = request.app.ctx.services.auth
-        otp_code = await auth_service.get_otp(body.phone)
+        otp_code = await auth_service.get_otp(body.phone_normalize())
         print(otp_code)
         if not otp_code:
             raise BadRequest("No need to confirm otp")
