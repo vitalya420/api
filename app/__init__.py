@@ -6,6 +6,8 @@ from app.db import async_session_factory
 
 from app.lazy import ServiceFactory
 
+from app import config
+
 app = Sanic(__name__)
 app.blueprint(api)
 
