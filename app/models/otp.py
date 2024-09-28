@@ -31,5 +31,5 @@ class OTP(Base):
     code = Column(String)
     sent_at = Column(DateTime)
     expires_at = Column(DateTime)
-    used = Column(Integer, default=False)
+    used = Column(Boolean, default=False)
     revoked = Column(Boolean, default=False)

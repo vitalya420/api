@@ -1,8 +1,6 @@
 import os
 import sys
 
-from sanic.log import logger
-
 from dotenv import load_dotenv, dotenv_values
 
 
@@ -20,13 +18,11 @@ def get_dotenv_path() -> str | None:
 def load():
     path = get_dotenv_path()
     if path is None:
-        logger.critical("No .env file found. Exiting.")
         sys.exit(1)
-    logger.info(f"Loading .env file from {path}")
     load_dotenv(dotenv_path=path)
 
 
-class Config:
+class Config(dict):
     _singleton = None
 
     def __new__(cls, *args, **kwargs):
@@ -35,16 +31,10 @@ class Config:
         return cls._singleton
 
     def __init__(self):
-        self.values = {**os.environ}
+        super().__init__(**os.environ)
         path = get_dotenv_path()
         if path:
-            self.values.update(dotenv_values(path))
-
-    def __getattr__(self, key:str):
-        try:
-            return getattr(self.values, key)
-        except AttributeError:
-            return None
+            self.update(dotenv_values(path))
 
 
 config = Config()

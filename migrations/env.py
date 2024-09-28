@@ -9,6 +9,14 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+
+from app.config import Config
+
+postgres_keys: list[str] = list(filter(lambda k: k.startswith("POSTGRES_"), Config().keys()))
+section = config.config_ini_section
+for key in postgres_keys:
+    config.set_section_option(section, key, Config()[key])
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

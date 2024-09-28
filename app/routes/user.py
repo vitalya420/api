@@ -1,6 +1,6 @@
 import asyncio
 
-from sanic import Blueprint, ServiceUnavailable
+from sanic import Blueprint, ServiceUnavailable, BadRequest
 from sanic.request import Request
 from sanic.response import json
 from sanic_ext import validate
@@ -46,9 +46,10 @@ async def create_user(request: Request, body: UserCreate):
 async def code_confirm(request: Request, body: UserCodeConfirm):
     real_code = request.ctx.otp.code
     if body.otp == real_code:
-        await request.app.ctx.services.auth.set_code_used(request.ctx.otp.id)
+        auth_service = request.app.ctx.services.auth
+        await auth_service.set_code_used(request.ctx.otp.id)
         return json({"message": "OTP code is valid!"})
-    return json({"message": "OTP code is invalid!"}, status=400)
+    raise BadRequest("Invalid OTP code.")
 
 
 @user.put('/')

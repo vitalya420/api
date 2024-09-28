@@ -30,7 +30,7 @@ class Authorization(BaseService):
                        limit: Optional[int] = 5,
                        limit_delta: Optional[timedelta] = timedelta(hours=3)):
 
-        now = datetime.now(UTC)
+        now = datetime.utcnow()
 
         cooldown_expiry = now - cooldown
         query = select(OTP).where(
@@ -78,7 +78,7 @@ class Authorization(BaseService):
             await session.refresh(instance)
 
     async def get_otp(self, phone: str):
-        now = datetime.now(UTC)
+        now = datetime.utcnow()
 
         query = select(OTP).where(
             and_(
@@ -99,5 +99,5 @@ class Authorization(BaseService):
     async def set_code_used(self, code_id: int):
         async with self.session_factory() as session:
             async with session.begin():
-                stmt = update(OTP).where(and_(OTP.id == code_id, eq(OTP.used == False))).values(used=True)
+                stmt = update(OTP).where(and_(OTP.id == code_id, eq(OTP.used, False))).values(used=True)
                 result = await session.execute(stmt)
