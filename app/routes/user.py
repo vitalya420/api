@@ -13,6 +13,7 @@ from app.security import (login_required,
                           otp_context_required)
 from app.security import rules
 from app.security import validator
+from app.security.tokens import encode_token
 
 user = Blueprint('user', url_prefix='/user')
 
@@ -48,8 +49,11 @@ async def code_confirm(request: Request, body: UserCodeConfirm):
     real_code = request.ctx.otp.code
     if body.otp == real_code:
         await request.app.ctx.services.auth.set_code_used(request.ctx.otp.id)
-        user_ = await request.app.ctx.services.user.get_or_create(body.phone_normalize())
-        return json({"message": f"OTP code is valid! {user_}"})
+        user_ = await (request.app.ctx.
+                       services.user.get_or_create(body.phone_normalize()))
+        access, refresh = await request.app.ctx.services.auth.issue_token_pair(user_)
+        return json({"tokens": {"access": encode_token(access), "refresh": encode_token(refresh)}})
+
     raise BadRequest("Invalid OTP code.")
 
 

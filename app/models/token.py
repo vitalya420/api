@@ -3,7 +3,6 @@ import uuid
 
 from sqlalchemy import (Column, String, Integer,
                         ForeignKey, DateTime, Boolean)
-from sqlalchemy.orm import relationship
 
 from app.config import config
 from app.db import Base
@@ -17,8 +16,12 @@ class RefreshToken(Base):
     revoked = Column(Boolean, nullable=False, default=False)
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     expires_at = Column(DateTime, nullable=False, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(
-        days=config.REFRESH_TOKEN_EXPIRE_DAYS or 14))
-    # access_token = relationship("AccessToken", back_populates="refresh_token")
+        days=int(config['REFRESH_TOKEN_EXPIRE_DAYS']) or 14))
+
+    # access_token_jti = Column(String, ForeignKey('access_tokens.jti'), nullable=False)
+
+    def __repr__(self):
+        return f"<RefreshToken(jti='{self.jti}', user_id={self.user_id})>"
 
 
 class AccessToken(Base):
@@ -30,6 +33,9 @@ class AccessToken(Base):
     user_agent = Column(String, nullable=False, default='<unknown>')
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     expires_at = Column(DateTime, nullable=False, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(
-        days=config.ACCESS_TOKEN_EXPIRE_DAYS or 7))
+        days=int(config['ACCESS_TOKEN_EXPIRE_DAYS']) or 7))
     revoked = Column(Boolean, nullable=False, default=False)
-    # refresh_token = relationship("RefreshToken", back_populates="access_token")
+    refresh_token_jti = Column(String, ForeignKey('refresh_tokens.jti'), nullable=False)
+
+    def __repr__(self):
+        return f"<AccessToken(jti='{self.jti}', user_id={self.user_id}), refresh_jti='{self.refresh_token_jti}'>"

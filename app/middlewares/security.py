@@ -7,3 +7,8 @@ from app import app
 async def security_middleware(request: Request):
     business = request.headers.get('X-Business-Id', None)
     request.ctx.business = business
+
+
+@app.middleware('request', priority=2)
+async def inject_user(request: Request):
+    pass

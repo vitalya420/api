@@ -6,7 +6,7 @@ from typing_extensions import Optional, Union, Literal
 
 from .base import BaseService
 from . import services
-from app.models import OTP
+from app.models import OTP, AccessToken, RefreshToken, User
 from app.utils.rand import random_code
 from app.tasks import send_sms_to_phone
 from app.exceptions import SmsCooldown
@@ -14,10 +14,23 @@ from app.exceptions import SmsCooldown
 
 @services('auth')
 class Authorization(BaseService):
-    async def issue_token_pair(self, user_id: int, *,
-                               access_token_lifetime: Optional[timedelta] = None,
-                               refresh_token_lifetime: Optional[timedelta] = None):
-        pass
+    async def issue_token_pair(self, user: Union[int, User]):
+        user_id = user.id if isinstance(user, User) else user
+
+        async with self.session_factory() as session:
+            refresh = RefreshToken(user_id=user_id)
+            session.add(refresh)
+            await session.commit()
+            await session.refresh(refresh)
+
+            access = AccessToken(user_id=user_id, ip_addr='127.0.0.1', refresh_token_jti=refresh.jti)
+            await session.commit()
+            session.add(access)
+
+            await session.refresh(refresh)
+            await session.refresh(access)
+
+            return access, refresh
 
     async def revoke_token(self, type_: Union[str, Literal['access', 'refresh']], jti: str):
         if type_ not in ['access', 'refresh']:
