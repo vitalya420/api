@@ -18,3 +18,7 @@ async def get_token_from_cache_or_db(jti: str, type_: str, redis_instance: redis
 
     await cache(f"token:{type_}:{jti}", pickle.dumps(token_db), redis_instance)
     return token_db
+
+
+async def remove_token_from_cache(jti: str, type_: str, redis_instance: redis.Redis):
+    await redis_instance.delete(f"token:{type_}:{jti}")

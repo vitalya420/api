@@ -1,6 +1,6 @@
 from sanic import Request
 
-from app.lazy import fetcher
+from app.utils.lazy import fetcher
 
 
 async def inject_business(request: Request):

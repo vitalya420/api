@@ -16,3 +16,7 @@ class TokensListPaginated(BaseModel):
     page: int
     per_page: int
     tokens: List[Token] = []
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

@@ -5,7 +5,7 @@ from app.routes import api
 from app.redis import connect
 from app import middlewares
 
-from app.lazy import services
+from app.utils.lazy import services
 
 from app.config import config
 

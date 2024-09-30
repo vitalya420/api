@@ -1,5 +1,5 @@
 from sanic import Request
-from app.lazy import create_lazy_services_factory
+from app.utils.lazy import create_lazy_services_factory
 
 
 async def inject_lazy_services(request: Request):

@@ -2,7 +2,7 @@ from typing import Type, Any, Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.services import BaseService
+from app.services.base import BaseService
 from app.utils.registry import Registry
 
 

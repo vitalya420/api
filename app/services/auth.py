@@ -4,16 +4,16 @@ from sqlalchemy import select, update
 from sqlalchemy.sql.operators import eq, and_
 from typing_extensions import Optional, Union, Literal
 
+from .base import BaseService
 from app.exceptions import SmsCooldown
-from app.models import OTP, AccessToken, RefreshToken, User
+from app.models import (OTP, AccessToken,
+                        RefreshToken, User)
 from app.tasks import send_sms_to_phone
 from app.utils.rand import random_code
-from . import services
-from .base import BaseService
+from app.db import async_session_factory
 
 
-@services('auth')
-class Authorization(BaseService):
+class AuthorizationService(BaseService):
     async def issue_token_pair(self, user: Union[int, User],
                                *,
                                ip_address: Optional[str] = None,
@@ -131,3 +131,6 @@ class Authorization(BaseService):
             async with session.begin():
                 stmt = update(OTP).where(and_(OTP.id == code_id, eq(OTP.used, False))).values(used=True)
                 result = await session.execute(stmt)
+
+
+auth = AuthorizationService(async_session_factory)

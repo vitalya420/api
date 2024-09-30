@@ -3,11 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.operators import eq
 
 from app.models import User
-from app.services import services
-from app.services.base import BaseService
+from .base import BaseService
+from ..db import async_session_factory
 
 
-@services("user")
 class UserService(BaseService):
     async def get(self, phone: str):
         async with self.session_factory() as session:
@@ -45,3 +44,6 @@ class UserService(BaseService):
         query = select(User).where(eq(User.phone, phone))
         result = await session.execute(query)
         return result.scalars().first()
+
+
+user = UserService(async_session_factory)
