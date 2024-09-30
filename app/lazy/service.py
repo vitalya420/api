@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Any, Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -42,15 +42,19 @@ class ServiceFactory:
         user_service = service_factory.user_service
     """
 
-    def __init__(self, session_factory: async_sessionmaker, services: Registry[Type[BaseService]]):
+    def __init__(self,
+                 session_factory: async_sessionmaker,
+                 services: Registry[Type[BaseService]],
+                 context: Optional[dict[Any, Any]] = None) -> None:
         self.session_factory: async_sessionmaker = session_factory
         self.services: Registry[Type[BaseService]] = services
+        self.context: dict[Any, Any] = context or dict()
         self._instances: dict[str, BaseService] = {}
 
     def get_or_create(self, service: str) -> BaseService:
         if service in self._instances:
             return self._instances[service]
-        instance = self.services[service](self.session_factory)
+        instance = self.services[service](self.session_factory, self.context)
         self._instances[service] = instance
         return instance
 

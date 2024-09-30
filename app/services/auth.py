@@ -1,20 +1,24 @@
-from datetime import timedelta, datetime, UTC
+from datetime import timedelta, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.sql.operators import eq, and_
 from typing_extensions import Optional, Union, Literal
 
-from .base import BaseService
-from . import services
-from app.models import OTP, AccessToken, RefreshToken, User
-from app.utils.rand import random_code
-from app.tasks import send_sms_to_phone
 from app.exceptions import SmsCooldown
+from app.models import OTP, AccessToken, RefreshToken, User
+from app.tasks import send_sms_to_phone
+from app.utils.rand import random_code
+from . import services
+from .base import BaseService
 
 
 @services('auth')
 class Authorization(BaseService):
-    async def issue_token_pair(self, user: Union[int, User]):
+    async def issue_token_pair(self, user: Union[int, User],
+                               *,
+                               ip_address: Optional[str] = None,
+                               user_agent: Optional[str] = None
+                               ):
         user_id = user.id if isinstance(user, User) else user
 
         async with self.session_factory() as session:
@@ -23,9 +27,15 @@ class Authorization(BaseService):
             await session.commit()
             await session.refresh(refresh)
 
-            access = AccessToken(user_id=user_id, ip_addr='127.0.0.1', refresh_token_jti=refresh.jti)
-            await session.commit()
+            ip_address = ip_address or self.context.get('ip_address', '<unknown>')
+            user_agent = user_agent or self.context.get('user_agent', '<unknown>')
+
+            access = AccessToken(user_id=user_id,
+                                 ip_addr=ip_address,
+                                 user_agent=user_agent,
+                                 refresh_token_jti=refresh.jti)
             session.add(access)
+            await session.commit()
 
             await session.refresh(refresh)
             await session.refresh(access)
@@ -35,6 +45,13 @@ class Authorization(BaseService):
     async def revoke_token(self, type_: Union[str, Literal['access', 'refresh']], jti: str):
         if type_ not in ['access', 'refresh']:
             raise ValueError('Invalid token type')
+
+    async def get_token_by_jti(self, type_: Union[str, Literal['access', 'refresh']], jti: str):
+        cls_ = AccessToken if type_ == 'access' else RefreshToken
+        query = select(cls_).where(and_(eq(cls_.jti, jti), eq(cls_.revoked, False)))
+        async with self.session_factory() as session:
+            res = await session.execute(query)
+            return res.scalars().first()
 
     async def send_otp(self, phone: str, *,
                        lifetime: Optional[timedelta] = timedelta(minutes=10),

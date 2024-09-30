@@ -14,7 +14,10 @@ class UserService(BaseService):
             return self._get_user(session, phone)
 
     async def get_by_id(self, user_id: int):
-        return
+        query = select(User).where(User.id == user_id)
+        async with self.session_factory() as session:
+            result = await session.execute(query)
+            return result.scalars().first()
 
     async def create(self, phone: str):
         async with self.session_factory() as session:
@@ -42,4 +45,3 @@ class UserService(BaseService):
         query = select(User).where(eq(User.phone, phone))
         result = await session.execute(query)
         return result.scalars().first()
-

@@ -3,22 +3,24 @@ from sanic.log import logger
 
 from app.routes import api
 from app.redis import connect
-from app.db import async_session_factory
+from app import middlewares
 
-from app.lazy import lazy_services
+from app.lazy import services
 
 from app.config import config
 
 app = Sanic(__name__)
 app.blueprint(api)
 
-from app import middlewares
+app.middleware(middlewares.inject_lazy_services, attach_to='request', priority=3)
+app.middleware(middlewares.inject_user, attach_to='request', priority=2)
+app.middleware(middlewares.inject_business, attach_to='request', priority=1)
 
 
 @app.after_server_start
 async def _init_app_context(app_):
     logger.info('Initializing app context')
-    app_.ctx.services = lazy_services
+    app_.ctx.services = services
 
     redis_ = await connect()
 

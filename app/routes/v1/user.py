@@ -19,11 +19,10 @@ user = Blueprint('user', url_prefix='/user')
 
 
 @user.get('/')
-# @rules(login_required, business_id_required)
+@rules(login_required, business_id_required)
 async def get_user(request: Request):
-    validator.validate_phone_number("+3813", raise_exception=True)
-    ret = await request.app.ctx.services.user.create(first_name='Hello', last_name="World", phone='+381048')
-    return json(User.model_validate(ret, from_attributes=True).model_dump())
+    user_ = await request.ctx.get_user()
+    return json(User.model_validate(user_, from_attributes=True).model_dump())
 
 
 @user.post('/')
@@ -51,7 +50,7 @@ async def code_confirm(request: Request, body: UserCodeConfirm):
         await request.app.ctx.services.auth.set_code_used(request.ctx.otp.id)
         user_ = await (request.app.ctx.
                        services.user.get_or_create(body.phone_normalize()))
-        access, refresh = await request.app.ctx.services.auth.issue_token_pair(user_)
+        access, refresh = await request.ctx.services.auth.issue_token_pair(user_)
         return json({"tokens": {"access": encode_token(access), "refresh": encode_token(refresh)}})
 
     raise BadRequest("Invalid OTP code.")

@@ -58,6 +58,7 @@ class Registry(dict[str, T]):
         if isinstance(name_or_cls, str):
             def wrapper(cls: T):
                 self[name_or_cls] = cls
+                return cls
 
             return wrapper
         else:
