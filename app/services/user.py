@@ -13,6 +13,9 @@ class UserService(BaseService):
         async with self.session_factory() as session:
             return self._get_user(session, phone)
 
+    async def get_by_id(self, user_id: int):
+        return
+
     async def create(self, phone: str):
         async with self.session_factory() as session:
             async with session.begin():

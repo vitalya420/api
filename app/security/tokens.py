@@ -21,3 +21,7 @@ def encode_token(token: Union[AccessToken, RefreshToken]):
         payload["type"] = "refresh"
 
     return jwt.encode(payload, config['SECRET_KEY'], algorithm="HS256")
+
+
+def decode_token(token: str):
+    return dict()
