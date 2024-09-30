@@ -20,6 +20,9 @@ class ServiceFactory:
             to create database sessions for the services.
         services (Registry[Type[BaseService]]): A registry that maps service names
             to their corresponding service classes.
+        context (dict[Any, Any]): A dictionary that contains useful information
+            to be passed to the service instances, allowing for additional context
+            during service initialization.
         _instances (dict[str, BaseService]): A private dictionary that caches
             created service instances to avoid redundant instantiation.
 
@@ -33,7 +36,7 @@ class ServiceFactory:
             This method delegates to `get_or_create` to ensure lazy instantiation.
 
     Usage:
-        service_factory = ServiceFactory(session_factory, services_registry)
+        service_factory = ServiceFactory(session_factory, services_registry, context={'key': 'value'})
 
         # Access a service instance
         user_service = service_factory.get_or_create('user_service')

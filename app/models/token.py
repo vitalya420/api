@@ -37,5 +37,9 @@ class AccessToken(Base):
     revoked = Column(Boolean, nullable=False, default=False)
     refresh_token_jti = Column(String, ForeignKey('refresh_tokens.jti'), nullable=False)
 
+    @property
+    def ip_address(self):
+        return self.ip_addr
+
     def __repr__(self):
         return f"<AccessToken(jti='{self.jti}', user_id={self.user_id}), refresh_jti='{self.refresh_token_jti}'>"

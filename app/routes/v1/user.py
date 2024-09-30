@@ -7,12 +7,13 @@ from sanic_ext import validate
 
 from app.exceptions import InvalidPhoneNumber
 from app.schemas import User, UserCreate
+from app.schemas.pagination import PaginationQuery
+from app.schemas.tokens import Token, TokensListPaginated
 from app.schemas.user import UserCodeConfirm
 from app.security import (login_required,
                           business_id_required,
                           otp_context_required)
 from app.security import rules
-from app.security import validator
 from app.security.tokens import encode_token
 
 user = Blueprint('user', url_prefix='/user')
@@ -66,3 +67,15 @@ async def update_user(request: Request):
 @rules(login_required, business_id_required)
 async def delete_user(request: Request):
     pass
+
+
+@user.get('/tokens')
+@rules(login_required)
+@validate(query=PaginationQuery)
+async def list_all_tokens(request: Request, query: PaginationQuery):
+    offset = (query.page - 1) * query.per_page
+    tokens_service = request.ctx.services.tokens  # Here this service contains user_id in context
+    all_tokens = await tokens_service.get_all_users_tokens(limit=query.per_page, offset=offset)
+    tokens = [Token.model_validate(token) for token in all_tokens]
+    paginated = TokensListPaginated(page=query.page, per_page=query.per_page, tokens=tokens)
+    return json(paginated.model_dump())

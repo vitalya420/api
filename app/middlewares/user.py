@@ -24,4 +24,5 @@ async def inject_user(request: Request):
             raise BadRequest("Access token is invalid")
 
         user_id = token_instance.user_id
+        request.ctx.services.context.update({'user_id': user_id})
         request.ctx.get_user = fetcher(user.get_by_id, user_id)
