@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey, DateTime
 
 from app.db import Base
-from .user import User
-from .business import Business
 
 
 class BusinessClient(Base):

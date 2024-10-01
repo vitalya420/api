@@ -17,6 +17,7 @@ class RefreshToken(Base):
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     expires_at = Column(DateTime, nullable=False, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(
         days=int(config['REFRESH_TOKEN_EXPIRE_DAYS']) or 14))
+    business = Column(String)
 
     # access_token_jti = Column(String, ForeignKey('access_tokens.jti'), nullable=False)
 
@@ -29,6 +30,7 @@ class AccessToken(Base):
 
     jti = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    business = Column(String)
     ip_addr = Column(String, nullable=False)
     user_agent = Column(String, nullable=False, default='<unknown>')
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)

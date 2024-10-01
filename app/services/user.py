@@ -4,7 +4,7 @@ from sqlalchemy.sql.operators import eq
 
 from app.models import User
 from .base import BaseService
-from ..db import async_session_factory
+from app.db import async_session_factory
 
 
 class UserService(BaseService):
@@ -19,25 +19,17 @@ class UserService(BaseService):
             return result.scalars().first()
 
     async def create(self, phone: str):
-        async with self.session_factory() as session:
-            async with session.begin():
-                instance = User(phone=phone)
-                session.add(instance)
-            await session.refresh(instance)
-            return instance
+        async with self.get_session() as session:
+            instance = User(phone=phone)
+            session.add(instance)
 
     async def get_or_create(self, phone: str):
-        """Runs in single session"""
-        async with self.session_factory() as session:
-            user = await self._get_user(session, phone)
-
-            if not user:
-                user = User(phone=phone)
-                session.add(user)
-                await session.commit()
-                await session.refresh(user)
-
-            return user
+        async with self.get_session() as session:
+            existing_user = await self._get_user(session, phone)
+            if existing_user:
+                return existing_user
+            await self.with_context({'session': session}).create(phone)
+            return await self._get_user(session, phone)
 
     @staticmethod
     async def _get_user(session: AsyncSession, phone: str):

@@ -4,6 +4,7 @@ from sanic import Request, Unauthorized, BadRequest
 
 from app.exceptions import BusinessIDRequired
 from app.schemas.user import UserCodeConfirm
+from app.services import otp
 
 
 def business_id_required(f):
@@ -30,11 +31,11 @@ def login_required(f):
 def otp_context_required(f):
     @wraps(f)
     async def decorated(request: Request, body: UserCodeConfirm, *args, **kwargs):
-        auth_service = request.app.ctx.services.auth
-        otp_code = await auth_service.get_otp(body.phone_normalize())
-        print(otp_code)
-        if not otp_code:
-            raise BadRequest("No need to confirm otp")
+        otp_code = await otp.get_unexpired_otp(body.phone_normalize())
+        if otp_code is None:
+            raise BadRequest("OTP code is expired")
+        if otp_code.destination != body.phone_normalize():
+            raise BadRequest("Bruh, wtf")  # this should never happen
         request.ctx.otp = otp_code
         return await f(request, body, *args, **kwargs)
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 
 from app.db import Base
@@ -33,3 +35,8 @@ class OTP(Base):
     expires_at = Column(DateTime)
     used = Column(Boolean, default=False)
     revoked = Column(Boolean, default=False)
+
+    def __repr__(self):
+        now = datetime.utcnow()
+        expired = self.expires_at < now
+        return f"<OTP(id={self.id}, destination='{self.destination}', code='{self.code}', expired={expired})>"

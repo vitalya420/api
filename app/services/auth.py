@@ -1,136 +1,84 @@
 from datetime import timedelta, datetime
 
-from sqlalchemy import select, update
-from sqlalchemy.sql.operators import eq, and_
-from typing_extensions import Optional, Union, Literal
-
+from app.db import async_session_factory
 from .base import BaseService
-from app.exceptions import SmsCooldown
-from app.models import (OTP, AccessToken,
-                        RefreshToken, User)
+from .otp import otp
+from app.exceptions import SMSCooldown
 from app.tasks import send_sms_to_phone
 from app.utils.rand import random_code
-from app.db import async_session_factory
 
 
 class AuthorizationService(BaseService):
-    async def issue_token_pair(self, user: Union[int, User],
-                               *,
-                               ip_address: Optional[str] = None,
-                               user_agent: Optional[str] = None
-                               ):
-        user_id = user.id if isinstance(user, User) else user
+    async def send_otp(self,
+                       phone: str,
+                       *,
+                       code_lifetime: timedelta = timedelta(minutes=5),
+                       sms_cooldown: timedelta = timedelta(seconds=1),
+                       revoke_old: bool = True,
+                       sms_limit: int = 10,
+                       sms_limit_time: timedelta = timedelta(hours=3)):
+        """
+        Send a one-time password (OTP) to the specified phone number.
 
-        async with self.session_factory() as session:
-            refresh = RefreshToken(user_id=user_id)
-            session.add(refresh)
-            await session.commit()
-            await session.refresh(refresh)
+        This method generates and sends an OTP to the provided phone number
+        in international format. It includes options for managing the
+        lifetime of the code, cooldown periods between SMS messages, and
+        limits on the number of messages sent.
 
-            ip_address = ip_address or self.context.get('ip_address', '<unknown>')
-            user_agent = user_agent or self.context.get('user_agent', '<unknown>')
+        Args:
+            phone (str): The phone number to which the OTP will be sent,
+                         formatted in international format (e.g., +1234567890).
+            code_lifetime (timedelta, optional): The duration for which the
+                                                  OTP is valid. Defaults to
+                                                  5 minutes.
+            sms_cooldown (timedelta, optional): The minimum time that must
+                                                 elapse between consecutive
+                                                 SMS messages sent to the
+                                                 same phone number. Defaults
+                                                 to 30 seconds.
+            revoke_old (bool, optional): If set to True, any previously sent
+                                          OTPs will be invalidated, making
+                                          them unusable. Defaults to True.
+            sms_limit (int, optional): The maximum number of SMS messages
+                                        that can be sent to the specified
+                                        phone number within the time frame
+                                        defined by `sms_limit_time`. Defaults
+                                        to 5.
+            sms_limit_time (timedelta, optional): The time period during which
+                                                   the `sms_limit` applies.
+                                                   Defaults to 3 hours.
 
-            access = AccessToken(user_id=user_id,
-                                 ip_addr=ip_address,
-                                 user_agent=user_agent,
-                                 refresh_token_jti=refresh.jti)
-            session.add(access)
-            await session.commit()
+        Returns:
+            None: If the OTP is successfully sent.
 
-            await session.refresh(refresh)
-            await session.refresh(access)
-
-            return access, refresh
-
-    async def revoke_token(self, type_: Union[str, Literal['access', 'refresh']], jti: str):
-        if type_ not in ['access', 'refresh']:
-            raise ValueError('Invalid token type')
-
-    async def get_token_by_jti(self, type_: Union[str, Literal['access', 'refresh']], jti: str):
-        cls_ = AccessToken if type_ == 'access' else RefreshToken
-        query = select(cls_).where(and_(eq(cls_.jti, jti), eq(cls_.revoked, False)))
-        async with self.session_factory() as session:
-            res = await session.execute(query)
-            return res.scalars().first()
-
-    async def send_otp(self, phone: str, *,
-                       lifetime: Optional[timedelta] = timedelta(minutes=10),
-                       cooldown: Optional[timedelta] = timedelta(minutes=1),
-                       revoke_old: Optional[bool] = True,
-                       limit: Optional[int] = 5,
-                       limit_delta: Optional[timedelta] = timedelta(hours=3)):
-
+        Raises:
+            Exception: If there is an error in sending the OTP, such as
+                       exceeding the SMS limit or invalid phone number format.
+        """
         now = datetime.utcnow()
 
-        cooldown_expiry = now - cooldown
-        query = select(OTP).where(
-            and_(
-                OTP.destination == phone,
-                OTP.sent_at >= cooldown_expiry
-            )
-        )
-
-        async with self.session_factory() as session:
-            result = await session.execute(query)
-            existing_otp = result.scalars().first()
-
-            if existing_otp:
-                raise SmsCooldown("You send to many codes.")
-
-            limit_expiry = now - limit_delta
-            limit_query = select(OTP).where(
-                and_(
-                    OTP.destination == phone,
-                    OTP.sent_at >= limit_expiry
-                )
-            )
-            limit_result = await session.execute(limit_query)
-            sent_count = len(limit_result.scalars().all())
-
-            if sent_count >= limit:
-                raise SmsCooldown(f"You have exceeded the limit of {limit} OTPs.")
-
-            if revoke_old:
-                revoke_query = select(OTP).where(OTP.destination == phone)
-                revoke_result = await session.execute(revoke_query)
-                old_otps = revoke_result.scalars().all()
-
-                for old_otp in old_otps:
-                    old_otp.revoked = True
-                await session.commit()
-
-        code = random_code()
-        await send_sms_to_phone(phone, code)
-        async with self.session_factory() as session:
+        async with self.get_session() as session:
             async with session.begin():
-                instance = OTP(destination=phone, code=code, sent_at=now, expires_at=now + lifetime)
-                session.add(instance)
-            await session.refresh(instance)
+                otp_service = otp.with_context({'session': session})
+                # Check is cooldown has passed
+                existing_otp = await otp_service.get_otp(phone, now - sms_cooldown)
+                if existing_otp:
+                    raise SMSCooldown("Too many SMS")
 
-    async def get_otp(self, phone: str):
-        now = datetime.utcnow()
+                # Check for limit
+                limit_result = await otp_service.get_otp(phone, now - sms_limit_time)
+                sms_count = len(limit_result)
+                if sms_count >= sms_limit:
+                    raise SMSCooldown("Too many SMS 2")
 
-        query = select(OTP).where(
-            and_(
-                eq(OTP.used, False),
-                and_(
-                    OTP.destination == phone,
-                    OTP.expires_at > now,
-                )
-            ),
-        ).order_by(OTP.sent_at.desc())
+                if revoke_old:
+                    row_affected = await otp_service.revoke_otps(phone)
+                    print(f'{row_affected=}')
 
-        async with self.session_factory() as session:
-            result = await session.execute(query)
-            valid_otp = result.scalars().first()
-
-        return valid_otp
-
-    async def set_code_used(self, code_id: int):
-        async with self.session_factory() as session:
-            async with session.begin():
-                stmt = update(OTP).where(and_(OTP.id == code_id, eq(OTP.used, False))).values(used=True)
-                result = await session.execute(stmt)
+                code = random_code()
+                await send_sms_to_phone(phone, code)
+                otp_instance = await otp_service.create(phone, code, now, now + code_lifetime)
+            await session.refresh(otp_instance)
 
 
 auth = AuthorizationService(async_session_factory)

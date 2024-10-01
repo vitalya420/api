@@ -13,5 +13,5 @@ class InvalidPhoneNumber(BadRequest):
     message = "The phone number is invalid."
 
 
-class SmsCooldown(ServiceUnavailable):
+class SMSCooldown(ServiceUnavailable):
     message = "SmsCooldown has been exceeded."

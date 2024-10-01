@@ -13,6 +13,7 @@ def encode_token(token: Union[AccessToken, RefreshToken]):
     payload = {
         "jti": token.jti,
         "user_id": token.user_id,
+        "business": token.business,
         "issued_at": int(token.issued_at.timestamp()),
         "expires_at": int(token.expires_at.timestamp()),
     }
