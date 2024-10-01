@@ -38,4 +38,4 @@ class UserService(BaseService):
         return result.scalars().first()
 
 
-user = UserService(async_session_factory)
+user_service = UserService(async_session_factory)

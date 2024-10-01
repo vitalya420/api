@@ -16,10 +16,10 @@ from sanic_ext import validate
 from app.schemas import UserCreate
 from app.schemas.user import UserCodeConfirm
 from app.serializers import serialize_token_pair
-from app.services import auth as auth_service
-from app.services import otp as otp_service
-from app.services import tokens as tokens_service
-from app.services import user as user_service
+from app.services import auth_service
+from app.services import otp_service
+from app.services import tokens_service
+from app.services import user_service
 from app.security import (rules,
                           otp_context_required,
                           business_id_required)

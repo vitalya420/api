@@ -64,4 +64,4 @@ class OTPService(BaseService):
             return result.rowcount
 
 
-otp = OTPService(async_session_factory)
+otp_service = OTPService(async_session_factory)

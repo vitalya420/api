@@ -2,24 +2,30 @@ from abc import ABC
 from contextlib import asynccontextmanager
 from typing import Optional, Any, Self, AsyncGenerator
 
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 
 class BaseService(ABC):
     """
-    Base service class for managing database sessions.
+    Base service class for managing database sessions and shared context.
 
     This class provides a foundation for services that require
     interaction with a database using SQLAlchemy's asynchronous
-    session management. It allows for session reuse and context
-    management.
+    session management. It allows for session reuse, context
+    management, and integration with Redis.
 
     Attributes:
         session_factory (async_sessionmaker): A factory for creating
                                               asynchronous database sessions.
         context (dict[Any, Any]): An optional context dictionary for
                                   storing additional information.
+        cls_context (dict[Any, Any]): A class-level context dictionary
+                                       for shared state among inherited
+                                       classes.
     """
+
+    cls_context: dict[Any, Any] = dict()
 
     def __init__(self,
                  session_factory: async_sessionmaker,
@@ -44,8 +50,8 @@ class BaseService(ABC):
 
         This method checks if there is an existing session in the context.
         If so, it reuses that session; otherwise, it creates a new session
-        using the session factory. The session is automatically closed
-        when the context is exited.
+        using the session factory. The session is automatically committed
+        and closed when the context is exited.
 
         Yields:
             AsyncSession: An asynchronous database session for use within
@@ -81,3 +87,20 @@ class BaseService(ABC):
             Self: A new instance of the service with the updated context.
         """
         return self.__class__(session_factory=self.session_factory, context=context)
+
+    @classmethod
+    def set_redis(cls, redis: Redis) -> None:
+        """
+        Set the Redis instance in the class-level context.
+
+        This method updates the class-level context with the provided
+        Redis instance, allowing inherited classes to access it.
+
+        Args:
+            redis (Redis): An instance of the Redis client to be stored
+                           in the class context.
+
+        Returns:
+            None: This method does not return a value.
+        """
+        cls.cls_context.update({'redis': redis})

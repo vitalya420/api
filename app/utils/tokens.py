@@ -3,7 +3,7 @@ import pickle
 import redis
 
 from app.cache.redis import get_from_cache, cache
-from app.services import auth
+from app.services import auth_service
 
 
 async def get_token_from_cache_or_db(jti: str, type_: str, redis_instance: redis.Redis):
@@ -12,7 +12,7 @@ async def get_token_from_cache_or_db(jti: str, type_: str, redis_instance: redis
     if token_cached:
         return pickle.loads(token_cached)
 
-    token_db = await auth.get_token_by_jti(type_, jti)
+    token_db = await auth_service.get_token_by_jti(type_, jti)
     if token_db is None:
         return
 

@@ -4,7 +4,7 @@ from sanic import Request, Unauthorized, BadRequest
 
 from app.exceptions import BusinessIDRequired
 from app.schemas.user import UserCodeConfirm
-from app.services import otp
+from app.services import otp_service
 
 
 def business_id_required(f):
@@ -12,6 +12,11 @@ def business_id_required(f):
     def decorated(request: Request, *args, **kwargs):
         if request.ctx.business is None:
             raise BusinessIDRequired
+        # Need to check if authorized user access that business which in headers
+        if hasattr(request.ctx, "access_token"):
+            token_business_id = request.ctx.access_token.business
+            if token_business_id != request.ctx.business:
+                raise Unauthorized
         return f(request, *args, **kwargs)
 
     return decorated
@@ -20,7 +25,7 @@ def business_id_required(f):
 def login_required(f):
     @wraps(f)
     async def decorated(request: Request, *args, **kwargs):
-        if request.token is None:
+        if request.ctx.access_token is None:
             raise Unauthorized
 
         return await f(request, *args, **kwargs)
@@ -31,7 +36,7 @@ def login_required(f):
 def otp_context_required(f):
     @wraps(f)
     async def decorated(request: Request, body: UserCodeConfirm, *args, **kwargs):
-        otp_code = await otp.get_unexpired_otp(body.phone_normalize())
+        otp_code = await otp_service.get_unexpired_otp(body.phone_normalize())
         if otp_code is None:
             raise BadRequest("OTP code is expired")
         if otp_code.destination != body.phone_normalize():

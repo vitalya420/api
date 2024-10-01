@@ -7,6 +7,7 @@ from app import middlewares
 
 
 from app.config import config
+from app.services import BaseService
 
 app = Sanic(__name__)
 app.blueprint([api, gateway])
@@ -20,6 +21,7 @@ async def _init_app_context(app_):
     logger.info('Initializing app context')
 
     redis_ = await connect()
+    BaseService.set_redis(redis_)
 
     if await redis_.ping():
         logger.info('Redis connection established')

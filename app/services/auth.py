@@ -1,11 +1,16 @@
 from datetime import timedelta, datetime
+from operator import eq
+from typing import Union, Literal
+
+from sqlalchemy import select, and_
 
 from app.db import async_session_factory
 from .base import BaseService
-from .otp import otp
+from app.services.otp import otp_service
 from app.exceptions import SMSCooldown
 from app.tasks import send_sms_to_phone
 from app.utils.rand import random_code
+from app.models import AccessToken, RefreshToken
 
 
 class AuthorizationService(BaseService):
@@ -59,26 +64,32 @@ class AuthorizationService(BaseService):
 
         async with self.get_session() as session:
             async with session.begin():
-                otp_service = otp.with_context({'session': session})
+                otp_service_ = otp_service.with_context({'session': session})
                 # Check is cooldown has passed
-                existing_otp = await otp_service.get_otp(phone, now - sms_cooldown)
+                existing_otp = await otp_service_.get_otp(phone, now - sms_cooldown)
                 if existing_otp:
                     raise SMSCooldown("Too many SMS")
 
                 # Check for limit
-                limit_result = await otp_service.get_otp(phone, now - sms_limit_time)
+                limit_result = await otp_service_.get_otp(phone, now - sms_limit_time)
                 sms_count = len(limit_result)
                 if sms_count >= sms_limit:
                     raise SMSCooldown("Too many SMS 2")
 
                 if revoke_old:
-                    row_affected = await otp_service.revoke_otps(phone)
-                    print(f'{row_affected=}')
+                    row_affected = await otp_service_.revoke_otps(phone)
 
                 code = random_code()
                 await send_sms_to_phone(phone, code)
-                otp_instance = await otp_service.create(phone, code, now, now + code_lifetime)
+                otp_instance = await otp_service_.create(phone, code, now, now + code_lifetime)
             await session.refresh(otp_instance)
 
+    async def get_token_by_jti(self, type_: Union[str, Literal["access", "refresh"]], jti: str):
+        cls_ = AccessToken if type_ == "access" else RefreshToken
+        query = select(cls_).where(and_(eq(cls_.jti, jti), eq(cls_.revoked, False)))
+        async with self.get_session() as session:
+            res = await session.execute(query)
+            return res.scalars().first()
 
-auth = AuthorizationService(async_session_factory)
+
+auth_service = AuthorizationService(async_session_factory)
