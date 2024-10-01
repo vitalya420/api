@@ -4,11 +4,11 @@ from typing import Union, Literal
 from sanic import Request, NotFound
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.operators import eq
 
 from app.db import async_session_factory
 from app.models import User, RefreshToken, AccessToken
 from .base import BaseService
-from ..utils.tokens import remove_token_from_cache
 
 
 class TokenService(BaseService):
@@ -31,6 +31,15 @@ class TokenService(BaseService):
             refresh_jti = access_token.refresh_token_jti
             await self._revoke_token_unsafe("access", jti, session)
             await self._revoke_token_unsafe("refresh", refresh_jti, session)
+            return ("access", jti), ("refresh", refresh_jti)
+
+    async def get_token_by_jti(self, type_: Union[str, Literal["access", "refresh"]],
+                               jti: str):
+        cls_ = AccessToken if type_ == "access" else RefreshToken
+        query = select(cls_).where(and_(eq(cls_.jti, jti), eq(cls_.revoked, False)))
+        async with self.get_session() as session:
+            result = await session.execute(query)
+            return result.scalars().first()
 
     async def get_user_tokens(self, user_or_id: Union[User, int], business: str):
         user_id = user_or_id if isinstance(user_or_id, int) else user_or_id.id
@@ -69,7 +78,8 @@ class TokenService(BaseService):
 
         return access, refresh
 
-    async def _get_token(self, user_id: int, business: str, jti: str, session: AsyncSession) -> AccessToken | None:
+    async def _get_token(self, user_id: int, business: str, jti: str,
+                         session: AsyncSession) -> AccessToken | None:
         query = select(AccessToken).where(and_(
             AccessToken.jti == jti,
             AccessToken.user_id == user_id,
@@ -82,10 +92,8 @@ class TokenService(BaseService):
     async def _revoke_token_unsafe(self, type_: Union[str, Literal["access", "refresh"]], jti: str,
                                    session: AsyncSession):
         cls_ = AccessToken if type_ == "access" else RefreshToken
-        query = update(cls_).where(cls_.jti == jti).values(revoked=True) # noqa
+        query = update(cls_).where(cls_.jti == jti).values(revoked=True)  # noqa
         result = await session.execute(query)
-        if result.rowcount:
-            await remove_token_from_cache(jti, type_, self.cls_context['redis'])
 
 
 tokens_service = TokenService(async_session_factory)

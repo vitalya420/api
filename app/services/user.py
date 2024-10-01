@@ -2,9 +2,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.operators import eq
 
+from app.db import async_session_factory
 from app.models import User
 from .base import BaseService
-from app.db import async_session_factory
 
 
 class UserService(BaseService):

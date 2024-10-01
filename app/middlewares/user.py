@@ -1,9 +1,9 @@
-from sanic import Request, BadRequest, Unauthorized
+from sanic import Request, BadRequest
 
-from app.utils.lazy import fetcher
 from app.security import decode_token
+from app.cache.token import get_token_from_cache_or_db
 from app.services import user_service
-from app.utils.tokens import get_token_from_cache_or_db
+from app.utils.lazy import fetcher
 
 
 async def inject_user(request: Request):
@@ -14,11 +14,12 @@ async def inject_user(request: Request):
 
         jti = jwt_payload['jti']
         type_ = jwt_payload['type']
+        business = jwt_payload['business']
 
         if type_ != "access":
             raise BadRequest(f"You trying to authorize with {type_} token")
 
-        token_instance = await get_token_from_cache_or_db(jti, type_, request.app.ctx.redis)
+        token_instance = await get_token_from_cache_or_db(jti, request.app.ctx.redis, type_)
 
         if token_instance is None:
             request.ctx.access_token = None

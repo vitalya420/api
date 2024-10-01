@@ -18,6 +18,7 @@ from sanic import Blueprint, json
 from sanic import Request
 from sanic_ext import validate
 
+from app.cache.token import delete_token_from_cache
 from app.schemas.tokens import RefreshTokenRequest
 from app.security import (rules,
                           login_required,
@@ -72,6 +73,16 @@ async def logout(request: Request):
     Returns:
         json: A JSON response indicating success of the logout operation.
     """
+
+    revoked = await tokens_service.revoke_token(
+        await request.ctx.get_user(),
+        request.ctx.business,
+        request.ctx.access_token.jti
+    )
+    redis = request.app.ctx.redis
+    for revoked_token in revoked:
+        type_, jti = revoked_token
+        await delete_token_from_cache(jti, redis, type_)
     return json({"ok": True})
 
 
@@ -115,10 +126,14 @@ async def revoke_token(request: Request, jti: str):
     Returns:
         json: A JSON response indicating success of the revocation operation.
     """
-    await tokens_service.revoke_token(
+    revoked = await tokens_service.revoke_token(
         await request.ctx.get_user(),
         request.ctx.business, jti
     )
+    redis = request.app.ctx.redis
+    for revoked_token in revoked:
+        type_, jti = revoked_token
+        await delete_token_from_cache(jti, redis, type_)
     return json({"ok": True, "jti": jti})
 
 
@@ -138,4 +153,24 @@ async def revoke_all_tokens(request: Request):
     Returns:
         json: A JSON response indicating success of the revocation operation.
     """
-    return json({"ok": True})
+
+    user_ = await request.ctx.get_user()
+    issued_tokens = await tokens_service.get_user_tokens(
+        user_, request.ctx.business
+    )
+
+    count = 0
+
+    redis = request.app.ctx.redis
+    for issued_token in issued_tokens:
+        if issued_token != request.ctx.access_token:
+            revoked = await tokens_service.revoke_token(
+                user_, request.ctx.business, issued_token.jti
+            )
+            count += 1
+
+            for revoked_token in revoked:
+                type_, jti = revoked_token
+                await delete_token_from_cache(jti, redis, type_)
+
+    return json({"ok": True, "tokens_revoked": count})

@@ -43,5 +43,8 @@ class AccessToken(Base):
     def ip_address(self):
         return self.ip_addr
 
+    def __eq__(self, other):
+        return self.jti == other.jti
+
     def __repr__(self):
         return f"<AccessToken(jti='{self.jti}', user_id={self.user_id}), refresh_jti='{self.refresh_token_jti}'>"
