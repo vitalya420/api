@@ -2,7 +2,7 @@ import pickle
 
 import redis
 
-from app.redis import get_from_cache, cache
+from app.cache.redis import get_from_cache, cache
 from app.services import auth
 
 

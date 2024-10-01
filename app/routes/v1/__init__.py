@@ -1,7 +1,11 @@
 from sanic import Blueprint
 
-from .user import user
-from .business import business
+from .auth import auth
+from .client import client
 from .token import token
 
-api_v1 = Blueprint.group(user, business, token, url_prefix='v1')
+blueprints = (
+    auth, client, token
+)
+
+api_v1 = Blueprint.group(*blueprints, url_prefix='v1')

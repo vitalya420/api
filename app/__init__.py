@@ -1,8 +1,8 @@
 from sanic import Sanic
 from sanic.log import logger
 
-from app.routes import api
-from app.redis import connect
+from app.routes import api, gateway
+from app.cache.redis import connect
 from app import middlewares
 
 from app.utils.lazy import services
@@ -10,7 +10,7 @@ from app.utils.lazy import services
 from app.config import config
 
 app = Sanic(__name__)
-app.blueprint(api)
+app.blueprint([api, gateway])
 
 app.middleware(middlewares.inject_lazy_services, attach_to='request', priority=3)
 app.middleware(middlewares.inject_user, attach_to='request', priority=2)
