@@ -20,7 +20,7 @@ async def inject_user(request: Request):
             raise BadRequest(f"You trying to authorize with {type_} token")
 
         token_instance = await get_token_from_cache_or_db(jti, request.app.ctx.redis, type_)
-
+        print(f'INSIDE MIDLLEWARE {token_instance=}')
         if token_instance is None:
             request.ctx.access_token = None
             return

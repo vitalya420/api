@@ -13,13 +13,17 @@ Endpoints:
 - POST /token/<jti>/revoke    : Revoke a specific access token by its JTI.
 - POST /token/revoke-all      : Revoke all access tokens associated with the current user.
 """
+from http import HTTPStatus
 
 from sanic import Blueprint, json
 from sanic import Request
 from sanic_ext import validate
+from sanic_ext.extensions.openapi import openapi
+from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
 from app.cache.token import delete_token_from_cache
-from app.schemas.tokens import RefreshTokenRequest
+from app.schemas import SuccessResponse
+from app.schemas.tokens import RefreshTokenRequest, TokensListPaginated, TokenPair
 from app.security import (rules,
                           login_required,
                           business_id_required)
@@ -30,6 +34,15 @@ token = Blueprint('token', url_prefix='/token')
 
 
 @token.get('/issued')
+@openapi.definition(
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    summary='List all issued access tokens',
+    description='List all issued access tokens.',
+    response=[Response({"application/json": TokensListPaginated.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)],
+    secured={"token": []},
+)
 @rules(login_required, business_id_required)
 async def get_all_tokens(request: Request):
     """
@@ -58,6 +71,15 @@ async def get_all_tokens(request: Request):
 
 
 @token.post('/logout')
+@openapi.definition(
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    summary='Logout',
+    description='Revokes current access token.',
+    response=[Response({"application/json": SuccessResponse.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)],
+    secured={"token": []},
+)
 @rules(login_required, business_id_required)
 async def logout(request: Request):
     """
@@ -87,6 +109,14 @@ async def logout(request: Request):
 
 
 @token.post('/refresh')
+@openapi.definition(
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    summary='Refresh',
+    description='Create new token pair with refresh token',
+    response=[Response({"application/json": TokenPair.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)]
+)
 @validate(json=RefreshTokenRequest)
 @rules(login_required, business_id_required)
 async def refresh_token(request: Request, body: RefreshTokenRequest):
@@ -110,6 +140,15 @@ async def refresh_token(request: Request, body: RefreshTokenRequest):
 
 
 @token.post('/<jti>/revoke')
+@openapi.definition(
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    summary='Revoke',
+    description='Revoke token by it\'s jti',
+    response=[Response({"application/json": SuccessResponse.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)],
+    secured={"token": []},
+)
 @rules(login_required, business_id_required)
 async def revoke_token(request: Request, jti: str):
     """
@@ -138,6 +177,15 @@ async def revoke_token(request: Request, jti: str):
 
 
 @token.post('/revoke-all')
+@openapi.definition(
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    summary='Revoke all',
+    description='Revoke all tokens except current one',
+    response=[Response({"application/json": SuccessResponse.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)],
+    secured={"token": []},
+)
 @rules(login_required, business_id_required)
 async def revoke_all_tokens(request: Request):
     """

@@ -9,26 +9,40 @@ Endpoints:
 - POST /auth/            : Send an SMS with an OTP for authentication.
 - POST /auth/confirm     : Verify the OTP and issue tokens upon successful verification.
 """
+from http import HTTPStatus
 
 from sanic import Blueprint, Request, json, BadRequest
-from sanic_ext import validate
+from sanic_ext import validate, serializer
+from sanic_ext.extensions.openapi import openapi
+from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
-from app.schemas import UserCreate
+from app.schemas import UserCreate, SuccessResponse
+from app.schemas.tokens import TokenPair
 from app.schemas.user import UserCodeConfirm
-from app.serializers import serialize_token_pair
-from app.services import auth_service
-from app.services import otp_service
-from app.services import tokens_service
-from app.services import user_service
 from app.security import (rules,
                           otp_context_required,
                           business_id_required)
+from app.serializers import serialize_token_pair, serialize_pydantic
+from app.services import (auth_service, otp_service,
+                          tokens_service, user_service)
 
 auth = Blueprint('auth', url_prefix='/auth')
 
 
 @auth.post('/')
+@openapi.definition(
+    body={'application/json': UserCreate.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )},
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    description="Request an OTP code to phone number. Then proceed with `/api/v1/confirm`",
+    summary='Start authorization flow',
+    response=[Response({'application/json': SuccessResponse.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)],
+)
 @rules(business_id_required)
+@serializer(serialize_pydantic)
 @validate(UserCreate)
 async def request_auth(request: Request, body: UserCreate):
     """
@@ -52,10 +66,21 @@ async def request_auth(request: Request, body: UserCreate):
                    will propagate to the caller.
     """
     await auth_service.send_otp(body.phone_normalize())
-    return json({"ok": True})
+    return SuccessResponse(message='OTP sent successfully.')
 
 
 @auth.post('/confirm')
+@openapi.definition(
+    body={'application/json': UserCodeConfirm.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )},
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    description="Confirm OTP code and get tokens",
+    summary='Complete authorization flow',
+    response=[Response({'application/json': TokenPair.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )}, status=HTTPStatus.OK)],
+)
 @validate(UserCodeConfirm)
 @rules(otp_context_required, business_id_required)
 async def confirm_auth(request: Request, body: UserCodeConfirm):
@@ -84,8 +109,8 @@ async def confirm_auth(request: Request, body: UserCodeConfirm):
     if otp_context.code == body.otp:
         await otp_service.set_code_used(otp_context)
         user = await user_service.get_or_create(otp_context.destination)
-        access, refresh = await (tokens_service.
-                                 with_context({'request': request})
+        access, refresh = await (tokens_service
+                                 .with_context({'request': request})
                                  .issue_token_pair(user, request.ctx.business))
         return json(serialize_token_pair(access, refresh))
     raise BadRequest("Wrong OTP code")

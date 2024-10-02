@@ -25,7 +25,9 @@ def business_id_required(f):
 def login_required(f):
     @wraps(f)
     async def decorated(request: Request, *args, **kwargs):
-        if request.ctx.access_token is None:
+        if not request.token:
+            raise Unauthorized
+        elif request.ctx.access_token is None:
             raise Unauthorized
 
         return await f(request, *args, **kwargs)

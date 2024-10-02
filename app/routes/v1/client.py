@@ -15,6 +15,8 @@ Endpoints:
 """
 
 from sanic import Blueprint, Request, json
+from sanic_ext.extensions.openapi import openapi
+from sanic_ext.extensions.openapi.definitions import Parameter
 
 from app.security import (rules,
                           business_id_required,
@@ -24,6 +26,10 @@ client = Blueprint('client', url_prefix='/client')
 
 
 @client.get('/')
+@openapi.definition(
+    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
+    description="Get information about a business client."
+)
 @rules(login_required, business_id_required)
 async def get_business_client_info(request: Request):
     """
