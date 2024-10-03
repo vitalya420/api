@@ -16,7 +16,6 @@ from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
-from app.config import Config
 from app.schemas import UserCreate, SuccessResponse
 from app.schemas.tokens import TokenPair
 from app.schemas.user import UserCodeConfirm
@@ -52,19 +51,6 @@ async def request_auth(request: Request, body: UserCreate):
     This endpoint sends an SMS containing a one-time password (OTP)
     to the user's registered phone number for authentication purposes.
     The phone number is normalized before sending the OTP.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-        body (UserCreate): The request body containing user information,
-                           including the phone number.
-
-    Returns:
-        json: A JSON response indicating the success of the OTP request.
-
-    Raises:
-        Exception: Any exceptions raised during the OTP sending process
-                   will propagate to the caller.
     """
     phone = body.phone_normalize()
     if not phone:
@@ -95,19 +81,6 @@ async def confirm_auth(request: Request, body: UserCodeConfirm):
     If the OTP is valid, it marks the code as used, retrieves or
     creates the user associated with the OTP, and issues JSON Web
     Tokens (JWT) for access and refresh.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data, including the OTP for verification.
-        body (UserCodeConfirm): The request body containing the OTP
-                                to be confirmed.
-
-    Returns:
-        json: A JSON response indicating success of the confirmation
-              and providing the issued access and refresh tokens.
-
-    Raises:
-        BadRequest: If the provided OTP does not match the stored code.
     """
     otp_context = request.ctx.otp
     if otp_context.code == body.otp:
