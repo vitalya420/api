@@ -68,8 +68,12 @@ class BaseService(ABC):
             async with self.session_factory() as session:
                 try:
                     yield session
-                finally:
+                except Exception as e:
+                    await session.rollback()
+                    raise
+                else:
                     await session.commit()
+                finally:
                     await session.close()
 
     def with_context(self, context: dict) -> Self:
