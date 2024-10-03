@@ -38,7 +38,9 @@ def login_required(f):
 def otp_context_required(f):
     @wraps(f)
     async def decorated(request: Request, body: UserCodeConfirm, *args, **kwargs):
-        otp_code = await otp_service.get_unexpired_otp(body.phone_normalize())
+        if not (phone := body.phone_normalize()):
+            raise BadRequest("Invalid phone number")
+        otp_code = await otp_service.get_unexpired_otp(phone)
         if otp_code is None:
             raise BadRequest("OTP code is expired")
         if otp_code.destination != body.phone_normalize():

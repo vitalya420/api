@@ -37,5 +37,5 @@ def decode_token(token: str, *, raise_exception: bool = True):
                 raise Unauthorized("Provided token is not valid or revoked")
 
         return payload
-    except jwt.InvalidSignatureError:
+    except jwt.exceptions.PyJWTError:
         raise Unauthorized("Provided token is not valid or revoked")

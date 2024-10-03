@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Union, Literal
 
-from sanic import Request, NotFound
+from sanic import Request, NotFound, Unauthorized
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.operators import eq
@@ -41,6 +41,24 @@ class TokenService(BaseService):
             result = await session.execute(query)
             return result.scalars().first()
 
+    async def refresh(self, payload: dict[str, Union[str, int, bool]]):
+        need_to_delete_from_cache = []
+        async with self.get_session() as session:
+            refresh = await self._get_token(payload['user_id'], payload['business'], payload['jti'], session, "refresh")
+            if not refresh or not refresh.is_alive():
+                raise Unauthorized("This refresh token is revoked or expired")
+
+            await self._revoke_token_unsafe("refresh", refresh.jti, session)
+            need_to_delete_from_cache.append(("refresh", refresh.jti))
+
+            access = await self._get_access_token_by_refresh_jti(payload['jti'], session)
+            print('access', access)
+            if access.is_alive():
+                await self._revoke_token_unsafe("access", access.jti, session)
+                need_to_delete_from_cache.append(("access", access.jti))
+        new_tokens = await self.issue_token_pair(payload['user_id'], payload['business'])
+        return need_to_delete_from_cache, new_tokens
+
     async def get_user_tokens(self, user_or_id: Union[User, int], business: str):
         user_id = user_or_id if isinstance(user_or_id, int) else user_or_id.id
         now = datetime.utcnow()  # noqa
@@ -79,12 +97,15 @@ class TokenService(BaseService):
         return access, refresh
 
     async def _get_token(self, user_id: int, business: str, jti: str,
-                         session: AsyncSession) -> AccessToken | None:
-        query = select(AccessToken).where(and_(
-            AccessToken.jti == jti,
-            AccessToken.user_id == user_id,
-            AccessToken.business == business,
-            AccessToken.revoked == False,
+                         session: AsyncSession,
+                         type_: Union[
+                             str, Literal["access", "refresh"]] = "access") -> AccessToken | RefreshToken | None:
+        cls_ = AccessToken if type_ == 'access' else RefreshToken
+        query = select(cls_).where(and_(
+            cls_.jti == jti,
+            cls_.user_id == user_id,
+            cls_.business == business,
+            cls_.revoked == False,
         ))
         result = await session.execute(query)
         return result.scalars().first()
@@ -94,6 +115,11 @@ class TokenService(BaseService):
         cls_ = AccessToken if type_ == "access" else RefreshToken
         query = update(cls_).where(cls_.jti == jti).values(revoked=True)  # noqa
         result = await session.execute(query)
+
+    async def _get_access_token_by_refresh_jti(self, refresh_jti: str, session: AsyncSession):
+        query = select(AccessToken).where(eq(AccessToken.refresh_token_jti, refresh_jti))
+        result = await session.execute(query)
+        return result.scalars().first()
 
 
 tokens_service = TokenService(async_session_factory)

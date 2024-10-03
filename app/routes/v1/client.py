@@ -38,13 +38,6 @@ async def get_business_client_info(request: Request):
     This endpoint returns details such as loyalty status, first name,
     and other relevant information about the client associated with
     the authenticated business.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-
-    Returns:
-        json: A JSON response indicating success with client information.
     """
     return json({"ok": True})
 
@@ -57,14 +50,6 @@ async def update_client_info(request: Request):
 
     This endpoint allows the modification of client details such as
     email, phone number, first name, and other relevant attributes.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data, including the updated client
-                           information.
-
-    Returns:
-        json: A JSON response indicating success of the update operation.
     """
     return json({"ok": True})
 
@@ -77,12 +62,5 @@ async def delete_client_info(request: Request):
 
     This endpoint removes the specified client from the business's
     records.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-
-    Returns:
-        json: A JSON response indicating success of the deletion operation.
     """
     return json({"ok": True})

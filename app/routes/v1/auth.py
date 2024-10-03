@@ -16,6 +16,7 @@ from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
+from app.config import Config
 from app.schemas import UserCreate, SuccessResponse
 from app.schemas.tokens import TokenPair
 from app.schemas.user import UserCodeConfirm
@@ -65,7 +66,10 @@ async def request_auth(request: Request, body: UserCreate):
         Exception: Any exceptions raised during the OTP sending process
                    will propagate to the caller.
     """
-    await auth_service.send_otp(body.phone_normalize())
+    phone = body.phone_normalize()
+    if not phone:
+        raise BadRequest("Invalid phone number")
+    code = await auth_service.send_otp(phone)
     return SuccessResponse(message='OTP sent successfully.')
 
 

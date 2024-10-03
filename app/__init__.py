@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+import sanic_ext
 from sanic import Sanic
 from sanic.log import logger
 
@@ -54,4 +55,6 @@ async def _init_app_context(app_):
 
 @app.before_server_stop
 async def _close_redis(app_):
-    await app_.ctx.redis.close()
+    await app_.ctx.redis.aclose()
+
+

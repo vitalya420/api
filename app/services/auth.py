@@ -16,7 +16,7 @@ class AuthorizationService(BaseService):
                        sms_cooldown: timedelta = timedelta(seconds=1),
                        revoke_old: bool = True,
                        sms_limit: int = 10,
-                       sms_limit_time: timedelta = timedelta(hours=3)):
+                       sms_limit_time: timedelta = timedelta(hours=3)) -> str:
         """
         Send a one-time password (OTP) to the specified phone number.
 
@@ -49,7 +49,7 @@ class AuthorizationService(BaseService):
                                                    Defaults to 3 hours.
 
         Returns:
-            None: If the OTP is successfully sent.
+            str: OTP code if it was successfully sent.
 
         Raises:
             Exception: If there is an error in sending the OTP, such as
@@ -78,6 +78,7 @@ class AuthorizationService(BaseService):
                 await send_sms_to_phone(phone, code)
                 otp_instance = await otp_service_.create(phone, code, now, now + code_lifetime)
             await session.refresh(otp_instance)
+            return code
 
 
 auth_service = AuthorizationService(async_session_factory)

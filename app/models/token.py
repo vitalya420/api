@@ -21,6 +21,10 @@ class RefreshToken(Base):
 
     # access_token_jti = Column(String, ForeignKey('access_tokens.jti'), nullable=False)
 
+    def is_alive(self):
+        now = datetime.datetime.utcnow()
+        return self.expires_at > now and not self.revoked
+
     def __repr__(self):
         return f"<RefreshToken(jti='{self.jti}', user_id={self.user_id})>"
 
@@ -45,6 +49,10 @@ class AccessToken(Base):
 
     def __eq__(self, other):
         return self.jti == other.jti
+
+    def is_alive(self):
+        now = datetime.datetime.utcnow()
+        return self.expires_at > now and not self.revoked
 
     def __repr__(self):
         return f"<AccessToken(jti='{self.jti}', user_id={self.user_id}), refresh_jti='{self.refresh_token_jti}'>"

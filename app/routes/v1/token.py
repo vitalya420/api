@@ -15,7 +15,8 @@ Endpoints:
 """
 from http import HTTPStatus
 
-from sanic import Blueprint, json
+import jwt.exceptions
+from sanic import Blueprint, json, BadRequest
 from sanic import Request
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
@@ -26,8 +27,8 @@ from app.schemas import SuccessResponse
 from app.schemas.tokens import RefreshTokenRequest, TokensListPaginated, TokenPair
 from app.security import (rules,
                           login_required,
-                          business_id_required)
-from app.serializers import serialize_issued_tokens
+                          business_id_required, decode_token)
+from app.serializers import serialize_issued_tokens, serialize_token_pair
 from app.services import tokens_service
 
 token = Blueprint('token', url_prefix='/token')
@@ -52,18 +53,6 @@ async def get_all_tokens(request: Request):
     active sessions for the authenticated user. It is useful for
     managing user sessions and identifying where the user is currently
     logged in.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-
-    Returns:
-        json: A JSON response indicating success and providing a list
-              of devices where the user is logged in.
-
-    Raises:
-        Exception: Any exceptions raised during the retrieval process
-                   will propagate to the caller.
     """
     user = await request.ctx.get_user()
     issued_tokens = await tokens_service.get_user_tokens(user, request.ctx.business)
@@ -87,13 +76,6 @@ async def logout(request: Request):
 
     This endpoint invalidates the access token associated with the
     authenticated user, effectively logging them out.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-
-    Returns:
-        json: A JSON response indicating success of the logout operation.
     """
 
     revoked = await tokens_service.revoke_token(
@@ -110,6 +92,9 @@ async def logout(request: Request):
 
 @token.post('/refresh')
 @openapi.definition(
+    body={"application/json": RefreshTokenRequest.model_json_schema(
+        ref_template="#/components/schemas/{model}"
+    )},
     parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
     summary='Refresh',
     description='Create new token pair with refresh token',
@@ -118,25 +103,30 @@ async def logout(request: Request):
     )}, status=HTTPStatus.OK)]
 )
 @validate(json=RefreshTokenRequest)
-@rules(login_required, business_id_required)
+@rules(business_id_required)
 async def refresh_token(request: Request, body: RefreshTokenRequest):
     """
     Issue new access and refresh tokens.
 
     This endpoint accepts a refresh token and, if valid, issues
     new access and refresh tokens for the user.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-        body (RefreshTokenRequest): The request body containing the
-                                    refresh token.
-
-    Returns:
-        json: A JSON response indicating success and providing the
-              new tokens.
     """
-    return json({"ok": True})
+    try:
+        payload = decode_token(body.refresh_token)
+        if payload['business'] != request.ctx.business:
+            raise BadRequest("Invalid token")
+        revoked, issued = await (tokens_service.
+                                 with_context({"request": request}).
+                                 refresh(payload))
+
+        redis = request.app.ctx.redis
+        for revoked_token in revoked:
+            type_, jti = revoked_token
+            await delete_token_from_cache(jti, redis, type_)
+
+        return json(serialize_token_pair(*issued))
+    except jwt.exceptions.PyJWTError:
+        raise BadRequest("Not a token")
 
 
 @token.post('/<jti>/revoke')
@@ -156,14 +146,6 @@ async def revoke_token(request: Request, jti: str):
 
     This endpoint invalidates a specific access token identified
     by its JTI, preventing its further use.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-        jti (str): The JWT ID of the access token to be revoked.
-
-    Returns:
-        json: A JSON response indicating success of the revocation operation.
     """
     revoked = await tokens_service.revoke_token(
         await request.ctx.get_user(),
@@ -193,13 +175,6 @@ async def revoke_all_tokens(request: Request):
 
     This endpoint invalidates all access tokens that belong to the
     authenticated user, effectively logging them out from all sessions.
-
-    Args:
-        request (Request): The Sanic request object containing the
-                           request data.
-
-    Returns:
-        json: A JSON response indicating success of the revocation operation.
     """
 
     user_ = await request.ctx.get_user()
