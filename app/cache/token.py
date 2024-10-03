@@ -37,9 +37,11 @@ async def get_token_from_cache_or_db(
         jti: str, redis: Redis,
         type_: Union[str, Literal["access", "refresh"]] = "access"):
     cached = await get_token_from_cache(jti, redis, type_)
+
     if cached:
         return cached
-    token_db = await tokens_service.get_token_by_jti(type_, jti)
+    token_db = await tokens_service.get_access_token_by_jti(jti)
+
     if token_db:
         await save_token_to_cache(token_db, redis)
         return token_db

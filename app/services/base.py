@@ -90,7 +90,7 @@ class BaseService(ABC):
         Returns:
             Self: A new instance of the service with the updated context.
         """
-        return self.__class__(session_factory=self.session_factory, context=context)
+        return self.__class__(session_factory=self.session_factory, context={**context, **self.context})
 
     @classmethod
     def set_redis(cls, redis: Redis) -> None:
@@ -108,3 +108,21 @@ class BaseService(ABC):
             None: This method does not return a value.
         """
         cls.cls_context.update({'redis': redis})
+
+    @classmethod
+    async def set_cache(cls, key: str, value: bytes, expires: Optional[int] = 60 * 60) -> None:
+        redis: Redis | None = cls.cls_context.get('redis', None)
+        if redis is None:
+            pass
+
+        await redis.set(
+            key, value, ex=expires
+        )
+
+    @classmethod
+    async def remove_cache(cls, key: str) -> None:
+        redis: Redis | None = cls.cls_context.get('redis', None)
+        if redis is None:
+            pass
+
+        await redis.delete(key)

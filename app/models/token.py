@@ -55,4 +55,5 @@ class AccessToken(Base):
         return self.expires_at > now and not self.revoked
 
     def __repr__(self):
-        return f"<AccessToken(jti='{self.jti}', user_id={self.user_id}), refresh_jti='{self.refresh_token_jti}'>"
+        return (f"<AccessToken(jti='{self.jti}', user_id={self.user_id}, alive={self.is_alive()}, "
+                f"refresh_jti='{self.refresh_token_jti})'>")

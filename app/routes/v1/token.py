@@ -55,7 +55,7 @@ async def get_all_tokens(request: Request):
     logged in.
     """
     user = await request.ctx.get_user()
-    issued_tokens = await tokens_service.get_user_tokens(user, request.ctx.business)
+    issued_tokens = await tokens_service.list_user_issued_tokens_tokens(user, request.ctx.business)
     return json(serialize_issued_tokens(issued_tokens))
 
 
@@ -78,15 +78,8 @@ async def logout(request: Request):
     authenticated user, effectively logging them out.
     """
 
-    revoked = await tokens_service.revoke_token(
-        await request.ctx.get_user(),
-        request.ctx.business,
-        request.ctx.access_token.jti
-    )
-    redis = request.app.ctx.redis
-    for revoked_token in revoked:
-        type_, jti = revoked_token
-        await delete_token_from_cache(jti, redis, type_)
+    await tokens_service.revoke_access_token(request.ctx.access_token)
+
     return json({"ok": True})
 
 
@@ -115,14 +108,9 @@ async def refresh_token(request: Request, body: RefreshTokenRequest):
         payload = decode_token(body.refresh_token)
         if payload['business'] != request.ctx.business:
             raise BadRequest("Invalid token")
-        revoked, issued = await (tokens_service.
-                                 with_context({"request": request}).
-                                 refresh(payload))
-
-        redis = request.app.ctx.redis
-        for revoked_token in revoked:
-            type_, jti = revoked_token
-            await delete_token_from_cache(jti, redis, type_)
+        issued = await (tokens_service.
+                        with_context({"request": request}).
+                        refresh_tokens(payload['jti']))
 
         return json(serialize_token_pair(*issued))
     except jwt.exceptions.PyJWTError:
@@ -147,14 +135,10 @@ async def revoke_token(request: Request, jti: str):
     This endpoint invalidates a specific access token identified
     by its JTI, preventing its further use.
     """
-    revoked = await tokens_service.revoke_token(
-        await request.ctx.get_user(),
-        request.ctx.business, jti
+    revoked = await tokens_service.user_revokes_access_token_by_jti(
+        await request.ctx.get_user(), jti
     )
-    redis = request.app.ctx.redis
-    for revoked_token in revoked:
-        type_, jti = revoked_token
-        await delete_token_from_cache(jti, redis, type_)
+
     return json({"ok": True, "jti": jti})
 
 
@@ -177,23 +161,9 @@ async def revoke_all_tokens(request: Request):
     authenticated user, effectively logging them out from all sessions.
     """
 
-    user_ = await request.ctx.get_user()
-    issued_tokens = await tokens_service.get_user_tokens(
-        user_, request.ctx.business
+    amount = await tokens_service.revoke_all(
+        await request.ctx.get_user(),
+        request.ctx.business,
+        exclude=[request.ctx.access_token.jti],
     )
-
-    count = 0
-
-    redis = request.app.ctx.redis
-    for issued_token in issued_tokens:
-        if issued_token != request.ctx.access_token:
-            revoked = await tokens_service.revoke_token(
-                user_, request.ctx.business, issued_token.jti
-            )
-            count += 1
-
-            for revoked_token in revoked:
-                type_, jti = revoked_token
-                await delete_token_from_cache(jti, redis, type_)
-
-    return json({"ok": True, "tokens_revoked": count})
+    return json({"ok": True, "tokens_revoked": amount})
