@@ -1,4 +1,4 @@
-from typing import Type, Literal, Union
+from typing import Type, Literal, Union, Tuple
 
 from app.models import RefreshToken, AccessToken, User, Business
 
@@ -16,6 +16,11 @@ UserType = Union[
 
 BusinessType = Union[
     str, Business
+]
+
+TokenPairType = Tuple[
+    AccessToken,
+    RefreshToken
 ]
 
 
