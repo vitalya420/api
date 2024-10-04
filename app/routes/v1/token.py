@@ -22,7 +22,6 @@ from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
-from app.cache.token import delete_token_from_cache
 from app.schemas import SuccessResponse
 from app.schemas.tokens import RefreshTokenRequest, TokensListPaginated, TokenPair
 from app.security import (rules,

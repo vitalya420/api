@@ -87,9 +87,8 @@ async def confirm_auth(request: Request, body: UserCodeConfirm):
     if otp_context.code == body.otp:
         await otp_service.set_code_used(otp_context)
         user = await user_service.get_or_create(otp_context.destination)
-        access, refresh = await (tokens_service.with_context({'request': request}).create_token_for_user(user, request.ctx.business))
-        # access, refresh = await (tokens_service
-        #                          .with_context({'request': request})
-        #                          .issue_token_pair(user, request.ctx.business))
+        access, refresh = await (tokens_service
+                                 .with_context({'request': request})
+                                 .create_token_for_user(user, request.ctx.business))
         return json(serialize_token_pair(access, refresh))
     raise BadRequest("Wrong OTP code")

@@ -90,7 +90,7 @@ class BaseService(ABC):
         Returns:
             Self: A new instance of the service with the updated context.
         """
-        return self.__class__(session_factory=self.session_factory, context={**context, **self.context})
+        return self.__class__(session_factory=self.session_factory, context={**self.context, **context})
 
     @classmethod
     def set_redis(cls, redis: Redis) -> None:
