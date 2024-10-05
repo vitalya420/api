@@ -137,8 +137,9 @@ async def revoke_token(request: Request, jti: str):
     revoked = await tokens_service.user_revokes_access_token_by_jti(
         await request.ctx.get_user(), jti
     )
-
-    return json({"ok": True, "jti": jti})
+    if revoked:
+        return json({"ok": True, "jti": jti})
+    raise BadRequest
 
 
 @token.post('/revoke-all')

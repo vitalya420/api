@@ -16,7 +16,6 @@ from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
-from app.routes.v1.token import refresh_token
 from app.schemas import UserCreate, SuccessResponse
 from app.schemas.tokens import TokenPair
 from app.schemas.user import UserCodeConfirm
