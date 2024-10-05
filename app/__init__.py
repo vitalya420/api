@@ -1,31 +1,29 @@
+import os.path
 from textwrap import dedent
 
-import sanic_ext
 from sanic import Sanic
 from sanic.log import logger
 
-from app.routes import api, gateway
-from app.cache.redis import connect
-from app import middlewares
-
+from app.redis import connect
 from app.config import config
+from app.request import ApiRequest
+from app.routes import api, gateway
 from app.services import BaseService
 
-app = Sanic(__name__)
+app = Sanic(__name__, request_class=ApiRequest)
 app.extend(config={
     "swagger_ui_configuration": {"apisSorter": "alpha", "operationsSorter": "alpha", "docExpansion": "list"}
 })
 app.blueprint([api, gateway])
 
+description_md = os.path.join(os.path.dirname(os.path.dirname(__file__)), "docs/description.md")
+with open(description_md, encoding="utf-8") as f:
+    description = f.read()
 
 app.ext.openapi.describe(
     "API",
     version="1.0.0",
-    description=dedent(
-        """
-        # Fuck yeah!
-        """
-    ),
+    description=dedent(description),
 )
 
 app.ext.openapi.add_security_scheme(
@@ -34,9 +32,6 @@ app.ext.openapi.add_security_scheme(
     scheme="Bearer",
     bearer_format="JWT",
 )
-
-app.middleware(middlewares.inject_user, attach_to='request', priority=2)
-app.middleware(middlewares.inject_business, attach_to='request', priority=1)
 
 
 @app.after_server_start

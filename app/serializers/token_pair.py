@@ -1,5 +1,5 @@
 from app.models import AccessToken, RefreshToken
-from app.security import encode_token
+from app.utils.tokens import encode_token
 
 
 def serialize_token_pair(access_token: AccessToken, refresh_token: RefreshToken) -> dict:

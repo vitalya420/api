@@ -11,6 +11,7 @@ from .base import BaseService
 class AuthorizationService(BaseService):
     async def send_otp(self,
                        phone: str,
+                       business: str,
                        *,
                        code_lifetime: timedelta = timedelta(minutes=5),
                        sms_cooldown: timedelta = timedelta(seconds=1),
@@ -28,6 +29,7 @@ class AuthorizationService(BaseService):
         Args:
             phone (str): The phone number to which the OTP will be sent,
                          formatted in international format (e.g., +1234567890).
+            business (str): Business code.
             code_lifetime (timedelta, optional): The duration for which the
                                                   OTP is valid. Defaults to
                                                   5 minutes.

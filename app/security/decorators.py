@@ -1,7 +1,8 @@
 from functools import wraps
 
-from sanic import Request, Unauthorized, BadRequest
+from sanic import Request, Unauthorized, BadRequest, Forbidden
 
+from app.request import ApiRequest
 from app.exceptions import BusinessIDRequired
 from app.schemas.user import UserCodeConfirm
 from app.services import otp_service
@@ -9,27 +10,30 @@ from app.services import otp_service
 
 def business_id_required(f):
     @wraps(f)
-    def decorated(request: Request, *args, **kwargs):
-        if request.ctx.business is None:
+    async def decorated(request: ApiRequest, *args, **kwargs):
+        if request.business_code is None:
             raise BusinessIDRequired
-        # Need to check if authorized user access that business which in headers
-        if hasattr(request.ctx, "access_token"):
-            token_business_id = request.ctx.access_token.business
-            if token_business_id != request.ctx.business:
-                raise Unauthorized
-        return f(request, *args, **kwargs)
+        return await f(request, *args, **kwargs)
 
     return decorated
 
 
 def login_required(f):
     @wraps(f)
-    async def decorated(request: Request, *args, **kwargs):
-        if not request.token:
+    async def decorated(request: ApiRequest, *args, **kwargs):
+        if not await request.get_user():
             raise Unauthorized
-        elif request.ctx.access_token is None:
-            raise Unauthorized
+        return await f(request, *args, **kwargs)
 
+    return decorated
+
+
+def admin_access(f):
+    @wraps(f)
+    async def decorated(request: Request, *args, **kwargs):
+        user = request.ctx.get_user()
+        if not user.is_admin:
+            raise Forbidden
         return await f(request, *args, **kwargs)
 
     return decorated

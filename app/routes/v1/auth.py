@@ -11,11 +11,12 @@ Endpoints:
 """
 from http import HTTPStatus
 
-from sanic import Blueprint, Request, json, BadRequest
+from sanic import Blueprint, json, BadRequest
 from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
+from app import ApiRequest
 from app.schemas import UserCreate, SuccessResponse
 from app.schemas.tokens import TokenPair
 from app.schemas.user import UserCodeConfirm
@@ -44,7 +45,7 @@ auth = Blueprint('auth', url_prefix='/auth')
 @rules(business_id_required)
 @serializer(serialize_pydantic)
 @validate(UserCreate)
-async def request_auth(request: Request, body: UserCreate):
+async def request_auth(request: ApiRequest, body: UserCreate):
     """
     Request an authentication code (OTP).
 
@@ -55,7 +56,7 @@ async def request_auth(request: Request, body: UserCreate):
     phone = body.phone_normalize()
     if not phone:
         raise BadRequest("Invalid phone number")
-    code = await auth_service.send_otp(phone)
+    code = await auth_service.send_otp(phone, request.business_code)
     return SuccessResponse(message='OTP sent successfully.')
 
 
@@ -73,7 +74,7 @@ async def request_auth(request: Request, body: UserCreate):
 )
 @validate(UserCodeConfirm)
 @rules(otp_context_required, business_id_required)
-async def confirm_auth(request: Request, body: UserCodeConfirm):
+async def confirm_auth(request: ApiRequest, body: UserCodeConfirm):
     """
     Confirm the OTP and issue JWT tokens.
 
@@ -88,6 +89,6 @@ async def confirm_auth(request: Request, body: UserCodeConfirm):
         user = await user_service.get_or_create(otp_context.destination)
         access, refresh = await (tokens_service
                                  .with_context({'request': request})
-                                 .create_token_for_user(user, request.ctx.business))
+                                 .create_token_for_user(user, request.business_code))
         return json(serialize_token_pair(access, refresh))
     raise BadRequest("Wrong OTP code")
