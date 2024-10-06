@@ -3,6 +3,7 @@ from typing import Dict, Union
 from sanic import Request
 
 from app.models import AccessToken, User
+from app.utils.lazy import create_lazy_services_factory
 from app.utils.tokens import decode_token
 from app.services import tokens_service, user_service
 
@@ -10,6 +11,7 @@ from app.services import tokens_service, user_service
 class ApiRequest(Request):
     def __init__(self, *sanic_args, **sanic_kwargs):
         super().__init__(*sanic_args, **sanic_kwargs)
+        self.services = create_lazy_services_factory(context={'request': self})
 
         self._business_code: Union[str, None] = None
         self._jwt_payload: Union[Dict[str, Union[str, int, bool]], None] = None

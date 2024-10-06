@@ -30,8 +30,8 @@ def login_required(f):
 
 def admin_access(f):
     @wraps(f)
-    async def decorated(request: Request, *args, **kwargs):
-        user = request.ctx.get_user()
+    async def decorated(request: ApiRequest, *args, **kwargs):
+        user = await request.get_user()
         if not user.is_admin:
             raise Forbidden
         return await f(request, *args, **kwargs)

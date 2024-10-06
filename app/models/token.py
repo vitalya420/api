@@ -19,8 +19,6 @@ class RefreshToken(Base):
         days=int(config['REFRESH_TOKEN_EXPIRE_DAYS']) or 14))
     business = Column(String)
 
-    # access_token_jti = Column(String, ForeignKey('access_tokens.jti'), nullable=False)
-
     def is_alive(self):
         now = datetime.datetime.utcnow()
         return self.expires_at > now and not self.revoked

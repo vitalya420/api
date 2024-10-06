@@ -14,10 +14,11 @@ Endpoints:
 - DELETE /client/       : Delete a business client.
 """
 
-from sanic import Blueprint, Request, json
+from sanic import Blueprint, json
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Parameter
 
+from app import ApiRequest
 from app.security import (rules,
                           business_id_required,
                           login_required)
@@ -27,11 +28,10 @@ client = Blueprint('client', url_prefix='/client')
 
 @client.get('/')
 @openapi.definition(
-    parameter=Parameter('X-Business-ID', str, "header", "Business ID", required=True),
     description="Get information about a business client."
 )
 @rules(login_required, business_id_required)
-async def get_business_client_info(request: Request):
+async def get_business_client_info(request: ApiRequest):
     """
     Retrieve information about a business client.
 
@@ -44,7 +44,7 @@ async def get_business_client_info(request: Request):
 
 @client.patch('/')
 @rules(login_required, business_id_required)
-async def update_client_info(request: Request):
+async def update_client_info(request: ApiRequest):
     """
     Update information for a business client.
 
@@ -56,7 +56,7 @@ async def update_client_info(request: Request):
 
 @client.delete('/')
 @rules(login_required, business_id_required)
-async def delete_client_info(request: Request):
+async def delete_client_info(request: ApiRequest):
     """
     Delete a business client.
 
