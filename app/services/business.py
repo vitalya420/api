@@ -1,3 +1,4 @@
+import pickle
 from typing import Union
 
 from sanic import BadRequest
@@ -25,8 +26,8 @@ class BusinessService(BaseService):
     async def get_business(self, business_id: int):
         async with self.get_session() as session:
             instance = await self._get_business(business_id, session)
-        if business:
-            await self.cache_object(business)
+        if instance:
+            await self.cache_object(instance)
         return instance
 
     async def get_business_by_code(self, code: str):
