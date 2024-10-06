@@ -5,8 +5,7 @@ import jwt
 from sanic import Unauthorized
 
 from app.config import config
-from app.models import (AccessToken,
-                        RefreshToken)
+from app.models import AccessToken, RefreshToken
 
 
 def encode_token(token: Union[AccessToken, RefreshToken]):
@@ -23,12 +22,12 @@ def encode_token(token: Union[AccessToken, RefreshToken]):
     elif isinstance(token, RefreshToken):
         payload["type"] = "refresh"
 
-    return jwt.encode(payload, config['SECRET_KEY'], algorithm="HS256")
+    return jwt.encode(payload, config["SECRET_KEY"], algorithm="HS256")
 
 
 def decode_token(token: str, *, raise_exception: bool = True):
     try:
-        payload = jwt.decode(token, config['SECRET_KEY'], algorithms=['HS256'])
+        payload = jwt.decode(token, config["SECRET_KEY"], algorithms=["HS256"])
         now = datetime.utcnow()
 
         expires_at = payload["expires_at"]

@@ -3,10 +3,7 @@ from typing import Type, Literal, Union, Tuple
 from app.models import RefreshToken, AccessToken, User, Business
 
 TokenType = Union[
-    str,
-    Literal["access", "refresh"],
-    Type[AccessToken],
-    Type[RefreshToken]
+    str, Literal["access", "refresh"], Type[AccessToken], Type[RefreshToken]
 ]
 
 UserType = Union[
@@ -14,14 +11,9 @@ UserType = Union[
     User,  # user instance
 ]
 
-BusinessType = Union[
-    str, Business
-]
+BusinessType = Union[str, Business]
 
-TokenPairType = Tuple[
-    AccessToken,
-    RefreshToken
-]
+TokenPairType = Tuple[AccessToken, RefreshToken]
 
 
 def get_token_class(token: TokenType) -> Union[Type[AccessToken], Type[RefreshToken]]:

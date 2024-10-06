@@ -9,15 +9,17 @@ from .base import BaseService
 
 
 class AuthorizationService(BaseService):
-    async def send_otp(self,
-                       phone: str,
-                       business: str,
-                       *,
-                       code_lifetime: timedelta = timedelta(minutes=5),
-                       sms_cooldown: timedelta = timedelta(seconds=1),
-                       revoke_old: bool = True,
-                       sms_limit: int = 10,
-                       sms_limit_time: timedelta = timedelta(hours=3)) -> str:
+    async def send_otp(
+        self,
+        phone: str,
+        business: str,
+        *,
+        code_lifetime: timedelta = timedelta(minutes=5),
+        sms_cooldown: timedelta = timedelta(seconds=1),
+        revoke_old: bool = True,
+        sms_limit: int = 10,
+        sms_limit_time: timedelta = timedelta(hours=3)
+    ) -> str:
         """
         Send a one-time password (OTP) to the specified phone number.
 
@@ -61,7 +63,7 @@ class AuthorizationService(BaseService):
 
         async with self.get_session() as session:
             async with session.begin():
-                otp_service_ = otp_service.with_context({'session': session})
+                otp_service_ = otp_service.with_context({"session": session})
                 # Check is cooldown has passed
                 existing_otp = await otp_service_.get_otp(phone, now - sms_cooldown)
                 if existing_otp:
@@ -78,7 +80,9 @@ class AuthorizationService(BaseService):
 
                 code = random_code()
                 await send_sms_to_phone(phone, code)
-                otp_instance = await otp_service_.create(phone, code, now, now + code_lifetime)
+                otp_instance = await otp_service_.create(
+                    phone, code, now, now + code_lifetime
+                )
             await session.refresh(otp_instance)
             return code
 

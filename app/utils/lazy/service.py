@@ -45,10 +45,12 @@ class ServiceFactory:
         user_service = service_factory.user_service
     """
 
-    def __init__(self,
-                 session_factory: async_sessionmaker,
-                 services: Registry[Type[BaseService]],
-                 context: Optional[dict[Any, Any]] = None) -> None:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker,
+        services: Registry[Type[BaseService]],
+        context: Optional[dict[Any, Any]] = None,
+    ) -> None:
         self.session_factory: async_sessionmaker = session_factory
         self.services: Registry[Type[BaseService]] = services
         self.context: dict[Any, Any] = context or dict()

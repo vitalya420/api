@@ -16,20 +16,15 @@ Endpoints:
 
 from sanic import Blueprint, json
 from sanic_ext.extensions.openapi import openapi
-from sanic_ext.extensions.openapi.definitions import Parameter
 
 from app import ApiRequest
-from app.security import (rules,
-                          business_id_required,
-                          login_required)
+from app.security import rules, business_id_required, login_required
 
-client = Blueprint('client', url_prefix='/client')
+client = Blueprint("client", url_prefix="/client")
 
 
-@client.get('/')
-@openapi.definition(
-    description="Get information about a business client."
-)
+@client.get("/")
+@openapi.definition(description="Get information about a business client.")
 @rules(login_required, business_id_required)
 async def get_business_client_info(request: ApiRequest):
     """
@@ -42,7 +37,7 @@ async def get_business_client_info(request: ApiRequest):
     return json({"ok": True})
 
 
-@client.patch('/')
+@client.patch("/")
 @rules(login_required, business_id_required)
 async def update_client_info(request: ApiRequest):
     """
@@ -54,7 +49,7 @@ async def update_client_info(request: ApiRequest):
     return json({"ok": True})
 
 
-@client.delete('/')
+@client.delete("/")
 @rules(login_required, business_id_required)
 async def delete_client_info(request: ApiRequest):
     """

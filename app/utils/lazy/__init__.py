@@ -8,5 +8,7 @@ from .fetcher import fetcher
 from app.utils.misc import services_registry
 
 
-def create_lazy_services_factory(context: Optional[dict[Any, Any]] = None) -> ServiceFactory:
+def create_lazy_services_factory(
+    context: Optional[dict[Any, Any]] = None
+) -> ServiceFactory:
     return ServiceFactory(_session_factory, services_registry, context)

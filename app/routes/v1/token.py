@@ -13,6 +13,7 @@ Endpoints:
 - POST /token/<jti>/revoke    : Revoke a specific access token by its JTI.
 - POST /token/revoke-all      : Revoke all access tokens associated with the current user.
 """
+
 from http import HTTPStatus
 
 import jwt.exceptions
@@ -24,23 +25,28 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app import ApiRequest
 from app.schemas import SuccessResponse
 from app.schemas.tokens import RefreshTokenRequest, TokensListPaginated, TokenPair
-from app.security import (rules,
-                          login_required,
-                          business_id_required)
+from app.security import rules, login_required, business_id_required
 from app.serializers import serialize_issued_tokens, serialize_token_pair
 from app.services import tokens_service
 from app.utils.tokens import decode_token
 
-token = Blueprint('token', url_prefix='/token')
+token = Blueprint("token", url_prefix="/token")
 
 
-@token.get('/issued')
+@token.get("/issued")
 @openapi.definition(
-    summary='List all issued access tokens',
-    description='List all issued access tokens.',
-    response=[Response({"application/json": TokensListPaginated.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )}, status=HTTPStatus.OK)],
+    summary="List all issued access tokens",
+    description="List all issued access tokens.",
+    response=[
+        Response(
+            {
+                "application/json": TokensListPaginated.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
     secured={"token": []},
 )
 @rules(login_required, business_id_required)
@@ -54,17 +60,26 @@ async def get_all_tokens(request: ApiRequest):
     logged in.
     """
     user = await request.get_user()
-    issued_tokens = await tokens_service.list_user_issued_tokens_tokens(user, request.business_code)
+    issued_tokens = await tokens_service.list_user_issued_tokens_tokens(
+        user, request.business_code
+    )
     return json(serialize_issued_tokens(issued_tokens))
 
 
-@token.post('/logout')
+@token.post("/logout")
 @openapi.definition(
-    summary='Logout',
-    description='Revokes current access token.',
-    response=[Response({"application/json": SuccessResponse.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )}, status=HTTPStatus.OK)],
+    summary="Logout",
+    description="Revokes current access token.",
+    response=[
+        Response(
+            {
+                "application/json": SuccessResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
     secured={"token": []},
 )
 @rules(login_required, business_id_required)
@@ -81,16 +96,25 @@ async def logout(request: ApiRequest):
     return json({"ok": True})
 
 
-@token.post('/refresh')
+@token.post("/refresh")
 @openapi.definition(
-    body={"application/json": RefreshTokenRequest.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )},
-    summary='Refresh',
-    description='Create new token pair with refresh token',
-    response=[Response({"application/json": TokenPair.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )}, status=HTTPStatus.OK)]
+    body={
+        "application/json": RefreshTokenRequest.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+    summary="Refresh",
+    description="Create new token pair with refresh token",
+    response=[
+        Response(
+            {
+                "application/json": TokenPair.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
 )
 @validate(json=RefreshTokenRequest)
 async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
@@ -102,22 +126,29 @@ async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
     """
     try:
         payload = decode_token(body.refresh_token)
-        issued = await (tokens_service.
-                        with_context({"request": request}).
-                        refresh_tokens(payload['jti']))
+        issued = await tokens_service.with_context({"request": request}).refresh_tokens(
+            payload["jti"]
+        )
 
         return json(serialize_token_pair(*issued))
     except jwt.exceptions.PyJWTError:
         raise BadRequest("Not a token")
 
 
-@token.post('/<jti>/revoke')
+@token.post("/<jti>/revoke")
 @openapi.definition(
-    summary='Revoke',
-    description='Revoke token by it\'s jti',
-    response=[Response({"application/json": SuccessResponse.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )}, status=HTTPStatus.OK)],
+    summary="Revoke",
+    description="Revoke token by it's jti",
+    response=[
+        Response(
+            {
+                "application/json": SuccessResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
     secured={"token": []},
 )
 @rules(login_required, business_id_required)
@@ -136,13 +167,20 @@ async def revoke_token(request: ApiRequest, jti: str):
     raise BadRequest
 
 
-@token.post('/revoke-all')
+@token.post("/revoke-all")
 @openapi.definition(
-    summary='Revoke all',
-    description='Revoke all tokens except current one',
-    response=[Response({"application/json": SuccessResponse.model_json_schema(
-        ref_template="#/components/schemas/{model}"
-    )}, status=HTTPStatus.OK)],
+    summary="Revoke all",
+    description="Revoke all tokens except current one",
+    response=[
+        Response(
+            {
+                "application/json": SuccessResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
     secured={"token": []},
 )
 @rules(login_required, business_id_required)

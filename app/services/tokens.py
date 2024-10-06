@@ -16,7 +16,9 @@ from .base import BaseService
 
 
 class TokenService(BaseService):
-    async def _create_tokens_using_context(self, user_id: int, business: str, session: AsyncSession) -> TokenPairType:
+    async def _create_tokens_using_context(
+        self, user_id: int, business: str, session: AsyncSession
+    ) -> TokenPairType:
         """
         Create a new pair of access and refresh tokens for a user.
 
@@ -31,19 +33,23 @@ class TokenService(BaseService):
         Returns:
             Tuple[AccessToken, RefreshToken]: The created access and refresh tokens.
         """
-        request: Request | None = self.context.get('request', None)
+        request: Request | None = self.context.get("request", None)
         if request is None:
             raise RuntimeError("Need to provide request in context")
-        ip_addr = request.headers.get('X-Real-IP', "<no ip>")
-        user_agent = request.headers.get('User-Agent', "<no agent>")
+        ip_addr = request.headers.get("X-Real-IP", "<no ip>")
+        user_agent = request.headers.get("User-Agent", "<no agent>")
 
         refresh = RefreshToken(user_id=user_id, business=business)
         session.add(refresh)
         await session.commit()
 
-        access = AccessToken(user_id=user_id, business=business,
-                             ip_addr=ip_addr, user_agent=user_agent,
-                             refresh_token_jti=refresh.jti)
+        access = AccessToken(
+            user_id=user_id,
+            business=business,
+            ip_addr=ip_addr,
+            user_agent=user_agent,
+            refresh_token_jti=refresh.jti,
+        )
         session.add(access)
         await session.commit()
 
@@ -72,8 +78,7 @@ class TokenService(BaseService):
                 eq(AccessToken.jti, jti),
                 eq(AccessToken.user_id, force_id(user)),
                 eq(AccessToken.revoked, False),
-                AccessToken.expires_at >= datetime.now()  # noqa
-
+                AccessToken.expires_at >= datetime.now(),  # noqa
             ),
         )
         async with self.get_session() as session:
@@ -83,7 +88,9 @@ class TokenService(BaseService):
                 return False
             refresh_jti = access_token.refresh_token_jti
 
-            amount = await self._revoke_token_by_jti("access", access_token.jti, session)
+            amount = await self._revoke_token_by_jti(
+                "access", access_token.jti, session
+            )
             await self._revoke_token_by_jti("refresh", refresh_jti, session)
 
         await asyncio.gather(
@@ -121,10 +128,12 @@ class TokenService(BaseService):
                 await self._revoke_token_by_jti("access", access.jti, session)
             keys_to_remove_from_cache.append(AccessToken.lookup_key(access.jti))
 
-            new_tokens = await (self.
-                                with_context({'session': session}).
-                                create_token_for_user(access.user_id, access.business))
-        await asyncio.gather(*[self.cache_delete(key) for key in keys_to_remove_from_cache])
+            new_tokens = await self.with_context(
+                {"session": session}
+            ).create_token_for_user(access.user_id, access.business)
+        await asyncio.gather(
+            *[self.cache_delete(key) for key in keys_to_remove_from_cache]
+        )
         return new_tokens
 
     async def revoke_access_token(self, access_token: AccessToken) -> None:
@@ -141,7 +150,9 @@ class TokenService(BaseService):
         """
         async with self.get_session() as session:
             await self._revoke_token_by_jti("access", access_token.jti, session)
-            await self._revoke_token_by_jti("refresh", access_token.refresh_token_jti, session)
+            await self._revoke_token_by_jti(
+                "refresh", access_token.refresh_token_jti, session
+            )
         await asyncio.gather(
             self.cache_delete(AccessToken.lookup_key(access_token.jti)),
             self.cache_delete(RefreshToken.lookup_key(access_token.refresh_token_jti)),
@@ -173,7 +184,12 @@ class TokenService(BaseService):
         async with self.get_session() as session:
             return await self._get_token("refresh", jti, session)
 
-    async def revoke_all(self, user: UserType, business: BusinessType, exclude: Optional[Sequence[str]] = None) -> int:
+    async def revoke_all(
+        self,
+        user: UserType,
+        business: BusinessType,
+        exclude: Optional[Sequence[str]] = None,
+    ) -> int:
         """
         Revoke all access tokens and their associated refresh tokens for a user and business.
 
@@ -195,7 +211,7 @@ class TokenService(BaseService):
                 eq(AccessToken.user_id, force_id(user)),
                 eq(AccessToken.business, force_business_code(business)),
                 eq(AccessToken.revoked, False),
-                AccessToken.expires_at >= datetime.now()  # noqa
+                AccessToken.expires_at >= datetime.now(),  # noqa
             ),
         )
         async with self.get_session() as session:
@@ -213,16 +229,22 @@ class TokenService(BaseService):
                 await self._revoke_token_by_jti("access", access_jti, session)
                 await self._revoke_token_by_jti("refresh", refresh_jti, session)
 
-                keys_to_remove_from_cache.extend([
-                    AccessToken.lookup_key(access_jti),
-                    RefreshToken.lookup_key(refresh_jti),
-                ])
+                keys_to_remove_from_cache.extend(
+                    [
+                        AccessToken.lookup_key(access_jti),
+                        RefreshToken.lookup_key(refresh_jti),
+                    ]
+                )
 
                 counter += 1
-        await asyncio.gather(*[self.cache_delete(key) for key in keys_to_remove_from_cache])
+        await asyncio.gather(
+            *[self.cache_delete(key) for key in keys_to_remove_from_cache]
+        )
         return counter
 
-    async def create_token_for_user(self, user: UserType, business: BusinessType) -> TokenPairType:
+    async def create_token_for_user(
+        self, user: UserType, business: BusinessType
+    ) -> TokenPairType:
         """
         Create a new access and refresh token pair for a user.
 
@@ -240,8 +262,9 @@ class TokenService(BaseService):
         await self.save_tokens_in_cache(access, refresh)
         return access, refresh
 
-    async def list_user_issued_tokens_tokens(self, user: UserType, business: BusinessType, limit: int = 0,
-                                             offset: int = 0) -> List[AccessToken]:
+    async def list_user_issued_tokens_tokens(
+        self, user: UserType, business: BusinessType, limit: int = 0, offset: int = 0
+    ) -> List[AccessToken]:
         """
         Retrieve all access tokens issued to a user for a specific business.
 
@@ -262,14 +285,16 @@ class TokenService(BaseService):
                 eq(AccessToken.user_id, force_id(user)),
                 eq(AccessToken.business, force_business_code(business)),
                 eq(AccessToken.revoked, False),
-                AccessToken.expires_at >= datetime.utcnow()
+                AccessToken.expires_at >= datetime.utcnow(),
             )
         )
         async with self.get_session() as session:
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def save_tokens_in_cache(self, *tokens: Union[AccessToken, RefreshToken]) -> None:
+    async def save_tokens_in_cache(
+        self, *tokens: Union[AccessToken, RefreshToken]
+    ) -> None:
         """
         Save multiple tokens in the cache.
 
@@ -278,7 +303,9 @@ class TokenService(BaseService):
         """
         await asyncio.gather(*[self.cache_object(token) for token in tokens])
 
-    async def remove_tokens_from_cache(self, *tokens: Union[AccessToken, RefreshToken]) -> None:
+    async def remove_tokens_from_cache(
+        self, *tokens: Union[AccessToken, RefreshToken]
+    ) -> None:
         """
         Remove multiple tokens from the cache.
 
@@ -305,12 +332,13 @@ class TokenService(BaseService):
                                        no access token is available.
         """
         return await self.with_cache(
-            AccessToken, jti,
-            self.get_access_token_by_jti, jti
+            AccessToken, jti, self.get_access_token_by_jti, jti
         )
 
     @staticmethod
-    async def _get_access_token_by_refresh_jti(refresh_jti: str, session: AsyncSession) -> Union[AccessToken, None]:
+    async def _get_access_token_by_refresh_jti(
+        refresh_jti: str, session: AsyncSession
+    ) -> Union[AccessToken, None]:
         """
         Retrieve an access token associated with a given refresh token JTI.
 
@@ -320,12 +348,16 @@ class TokenService(BaseService):
         Returns:
             AccessToken: The access token associated with the provided refresh token JTI, or None if not found.
         """
-        query = select(AccessToken).where(eq(AccessToken.refresh_token_jti, refresh_jti))
+        query = select(AccessToken).where(
+            eq(AccessToken.refresh_token_jti, refresh_jti)
+        )
         result = await session.execute(query)
         return result.scalars().first()
 
     @staticmethod
-    async def _revoke_token_by_jti(type_: TokenType, jti: str, session: AsyncSession) -> int:
+    async def _revoke_token_by_jti(
+        type_: TokenType, jti: str, session: AsyncSession
+    ) -> int:
         """
         Revoke a token (access or refresh) by its JTI.
 
@@ -338,18 +370,24 @@ class TokenService(BaseService):
             int: The number of rows affected (should be 1 if the token was revoked).
         """
         class_ = get_token_class(type_)
-        query = update(class_).where(
-            and_(
-                eq(class_.jti, jti),
-                eq(class_.revoked, False),
-                class_.expires_at >= datetime.utcnow()  # noqa
+        query = (
+            update(class_)
+            .where(
+                and_(
+                    eq(class_.jti, jti),
+                    eq(class_.revoked, False),
+                    class_.expires_at >= datetime.utcnow(),  # noqa
+                )
             )
-        ).values(revoked=True)
+            .values(revoked=True)
+        )
         result = await session.execute(query)
         return result.rowcount  # noqa
 
     @staticmethod
-    async def _get_token(type_: TokenType, jti: str, session: AsyncSession) -> Union[AccessToken, RefreshToken, None]:
+    async def _get_token(
+        type_: TokenType, jti: str, session: AsyncSession
+    ) -> Union[AccessToken, RefreshToken, None]:
         """
         Retrieve a token (access or refresh) by its JTI.
 
@@ -365,9 +403,7 @@ class TokenService(BaseService):
         now = datetime.utcnow()  # noqa
         query = select(class_).where(
             and_(
-                eq(class_.jti, jti),
-                eq(class_.revoked, False),
-                class_.expires_at >= now
+                eq(class_.jti, jti), eq(class_.revoked, False), class_.expires_at >= now
             )
         )
         result = await session.execute(query)

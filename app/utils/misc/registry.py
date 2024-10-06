@@ -1,6 +1,6 @@
 from typing import TypeVar, Union
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Registry(dict[str, T]):
@@ -56,6 +56,7 @@ class Registry(dict[str, T]):
 
     def __call__(self, name_or_cls: Union[T, str]):
         if isinstance(name_or_cls, str):
+
             def wrapper(cls: T):
                 self[name_or_cls] = cls
                 return cls

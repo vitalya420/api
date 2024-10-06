@@ -2,8 +2,7 @@ import datetime
 import uuid
 from typing import Self
 
-from sqlalchemy import (Column, String, Integer,
-                        ForeignKey, DateTime, Boolean)
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean
 
 from app.config import config
 from app.db import Base
@@ -24,13 +23,17 @@ class Token(Base, CacheableMixin):
 
 
 class RefreshToken(Token):
-    __tablename__ = 'refresh_tokens'
+    __tablename__ = "refresh_tokens"
 
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     revoked = Column(Boolean, nullable=False, default=False)
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(
-        days=int(config['REFRESH_TOKEN_EXPIRE_DAYS']) or 14))
+    expires_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.datetime.utcnow()
+        + datetime.timedelta(days=int(config["REFRESH_TOKEN_EXPIRE_DAYS"]) or 14),
+    )
     business = Column(String)
 
     def is_alive(self):
@@ -42,17 +45,21 @@ class RefreshToken(Token):
 
 
 class AccessToken(Token):
-    __tablename__ = 'access_tokens'
+    __tablename__ = "access_tokens"
 
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     business = Column(String)
     ip_addr = Column(String, nullable=False)
-    user_agent = Column(String, nullable=False, default='<unknown>')
+    user_agent = Column(String, nullable=False, default="<unknown>")
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False, default=lambda: datetime.datetime.utcnow() + datetime.timedelta(
-        days=int(config['ACCESS_TOKEN_EXPIRE_DAYS']) or 7))
+    expires_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.datetime.utcnow()
+        + datetime.timedelta(days=int(config["ACCESS_TOKEN_EXPIRE_DAYS"]) or 7),
+    )
     revoked = Column(Boolean, nullable=False, default=False)
-    refresh_token_jti = Column(String, ForeignKey('refresh_tokens.jti'), nullable=False)
+    refresh_token_jti = Column(String, ForeignKey("refresh_tokens.jti"), nullable=False)
 
     @property
     def ip_address(self):
@@ -66,5 +73,7 @@ class AccessToken(Token):
         return self.expires_at > now and not self.revoked
 
     def __repr__(self):
-        return (f"<AccessToken(jti='{self.jti}', user_id={self.user_id}, alive={self.is_alive()}, "
-                f"refresh_jti='{self.refresh_token_jti})'>")
+        return (
+            f"<AccessToken(jti='{self.jti}', user_id={self.user_id}, alive={self.is_alive()}, "
+            f"refresh_jti='{self.refresh_token_jti})'>"
+        )

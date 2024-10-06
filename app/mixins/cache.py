@@ -17,6 +17,7 @@ class RedisCacheMixin(ABC):
     Attributes:
         _redis (Union[Redis, None]): The Redis instance used for caching.
     """
+
     _redis: Union[Redis, None] = None
 
     @classmethod
@@ -132,9 +133,14 @@ class RedisCacheMixin(ABC):
             await cls._redis.delete(key)
 
     @classmethod
-    async def with_cache(cls, class_: Type[CacheableMixin], pk: Union[str, int],
-                         getter: Callable[..., Awaitable[CacheableMixin]],
-                         *getter_args, **getter_kwargs) -> Union[CacheableMixin, None]:
+    async def with_cache(
+        cls,
+        class_: Type[CacheableMixin],
+        pk: Union[str, int],
+        getter: Callable[..., Awaitable[CacheableMixin]],
+        *getter_args,
+        **getter_kwargs
+    ) -> Union[CacheableMixin, None]:
         """
         Retrieve a value from the cache or compute it using a getter function.
 
@@ -164,7 +170,9 @@ class RedisCacheMixin(ABC):
         cached = await cls.cache_get(lookup_key)
         if cached:
             return class_.from_bytes(cached)
-        instance: Union[CacheableMixin, None] = await getter(*getter_args, **getter_kwargs)
+        instance: Union[CacheableMixin, None] = await getter(
+            *getter_args, **getter_kwargs
+        )
         if instance is not None:
             await cls.cache_set(instance.get_key(), bytes(instance))
         return instance

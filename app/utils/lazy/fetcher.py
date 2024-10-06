@@ -1,10 +1,12 @@
 import inspect
 from typing import Any, Callable, Coroutine, TypeVar
 
-R = TypeVar('R')
+R = TypeVar("R")
 
 
-def fetcher(func, *func_args: Any, **func_kwargs: Any) -> Callable[[], Coroutine[Any, Any, R]]:
+def fetcher(
+    func, *func_args: Any, **func_kwargs: Any
+) -> Callable[[], Coroutine[Any, Any, R]]:
     """
     Lazily fetch the result of a function call (synchronous or asynchronous) and return it.
 

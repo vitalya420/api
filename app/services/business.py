@@ -18,7 +18,9 @@ class BusinessService(BaseService):
                 session.add(instance)
             return instance
         except IntegrityError as exc:
-            raise BadRequest(f"IntegrityError: maybe there are no user with id: {owner_id}")
+            raise BadRequest(
+                f"IntegrityError: maybe there are no user with id: {owner_id}"
+            )
 
     async def get_business(self, business_id: int):
         async with self.get_session() as session:

@@ -26,7 +26,7 @@ class OTP(CacheableModelMixin):
         to ensure security and prevent abuse.
     """
 
-    __tablename__ = 'otps'
+    __tablename__ = "otps"
 
     destination = Column(String)
     code = Column(String)

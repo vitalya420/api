@@ -12,10 +12,10 @@ Endpoints:
 
 from sanic import Blueprint, Request, json, Websocket
 
-gateway = Blueprint('gateway', url_prefix='/gateway')
+gateway = Blueprint("gateway", url_prefix="/gateway")
 
 
-@gateway.route('/endpoint')
+@gateway.route("/endpoint")
 async def get_endpoint(request: Request):
     """
     Retrieve the endpoint for the WebSocket gateway.
@@ -37,4 +37,4 @@ async def handle_websocket(request: Request, ws: Websocket):
         await ws.send(message)
 
 
-gateway.add_websocket_route(handle_websocket, '/')
+gateway.add_websocket_route(handle_websocket, "/")

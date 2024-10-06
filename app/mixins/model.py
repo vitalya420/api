@@ -29,7 +29,9 @@ class CacheableModelMixin(Base, CacheableMixin):
     This field is automatically set to the current UTC time when a new record is created.
     """
 
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
     """
     The timestamp when the record was last updated.
 
@@ -46,7 +48,7 @@ class CacheableModelMixin(Base, CacheableMixin):
         Returns:
             str: A unique cache key in the format '{tablename}:{id}'.
         """
-        return f'{self.__tablename__}:{self.id}'
+        return f"{self.__tablename__}:{self.id}"
 
     @classmethod
     def lookup_key(cls, key: str) -> str:
@@ -63,4 +65,4 @@ class CacheableModelMixin(Base, CacheableMixin):
         Returns:
             str: A lookup cache key in the format '{tablename}:{key}'.
         """
-        return f'{cls.__tablename__}:{key}'
+        return f"{cls.__tablename__}:{key}"

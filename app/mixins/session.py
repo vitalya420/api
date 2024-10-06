@@ -21,7 +21,11 @@ class SessionManagementMixin(ABC):
                                    storing additional information.
     """
 
-    def __init__(self, session_factory: async_sessionmaker, context: Optional[Dict[Any, Any]] = None):
+    def __init__(
+        self,
+        session_factory: async_sessionmaker,
+        context: Optional[Dict[Any, Any]] = None,
+    ):
         """
         Initialize the SessionManagementMixin with a session factory and optional context.
 
@@ -94,4 +98,6 @@ class SessionManagementMixin(ABC):
         Returns:
             Self: A new instance of the mixin with the updated context.
         """
-        return self.__class__(session_factory=self.session_factory, context={**self.context, **context})
+        return self.__class__(
+            session_factory=self.session_factory, context={**self.context, **context}
+        )

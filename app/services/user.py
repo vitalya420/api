@@ -37,7 +37,7 @@ class UserService(BaseService):
             if existing_user:
                 await self.cache_object(existing_user)
                 return existing_user
-            await self.with_context({'session': session}).create(phone)
+            await self.with_context({"session": session}).create(phone)
             user = await self._get_user(phone, session)
         await self.cache_object(user)
         return user
@@ -49,10 +49,7 @@ class UserService(BaseService):
         return result.scalars().first()
 
     async def get_user_by_id_with_cache(self, user_id: int) -> Union[User, None]:
-        return await self.with_cache(
-            User, user_id,
-            self.get_user_by_id, user_id
-        )
+        return await self.with_cache(User, user_id, self.get_user_by_id, user_id)
 
 
 user_service = UserService(async_session_factory)
