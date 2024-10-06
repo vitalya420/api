@@ -30,27 +30,6 @@ async def get_business(request: ApiRequest, business_id: int):
     return BusinessResponse.model_validate(instance)
 
 
-@business.post("/")
-@openapi.definition(
-    body={
-        "application/json": BusinessCreate.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
-    },
-    secured={"token": []},
-)
-@validate(BusinessCreate)
-@rules(login_required, admin_access)
-async def create_business(request: ApiRequest, body: BusinessCreate):
-    instance = await business_service.create_business(
-        name=body.name, owner_id=body.owner_id
-    )
-    if instance:
-        return json(
-            {"ok": True, "message": f"Business {instance.name} created successfully!"}
-        )
-
-
 @business.patch("/<business_id>")
 async def update_business(request: ApiRequest):
     pass

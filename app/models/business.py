@@ -11,5 +11,8 @@ class Business(CacheableModelMixin):
     name = Column(String(255), nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id"))
 
+    def get_key(self) -> str:
+        return f"{self.__tablename__}:{self.code}"
+
     def __repr__(self):
         return f"<Business(id={self.id}, code='{self.code}', name='{self.name}')>"

@@ -1,19 +1,19 @@
 import asyncio
-import pickle
 from datetime import datetime
 from typing import Union, Optional, Tuple, List, Sequence
 
-from sanic import Request, BadRequest
+from sanic import Request, BadRequest, NotFound
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.operators import eq
 
 from app.db import async_session_factory
-from app.models import RefreshToken, AccessToken, User
+from app.models import RefreshToken, AccessToken
 from app.types import TokenType, UserType, BusinessType, get_token_class, TokenPairType
 from app.utils import force_id, force_business_code
+from .business import business_service
 from .base import BaseService
-from ..schemas.user import Realm
+from app.schemas.user import Realm
 
 
 class TokenService(BaseService):
@@ -269,6 +269,9 @@ class TokenService(BaseService):
         if realm == Realm.mobile and business is None:
             raise BadRequest("For mobile app business id should be provided.")
 
+        if await business_service.get_business_by_code_with_cache(business) is None:
+            raise NotFound(f"Business with code {business} not found.")
+
         async with self.get_session() as session:
             access, refresh = await self._create_tokens_using_context(
                 force_id(user),
@@ -278,9 +281,6 @@ class TokenService(BaseService):
             )
         await self.save_tokens_in_cache(access, refresh)
         return access, refresh
-
-    async def create_token_for_webui(self, user: User):
-        pass
 
     async def list_user_issued_tokens_tokens(
         self, user: UserType, business: BusinessType, limit: int = 0, offset: int = 0

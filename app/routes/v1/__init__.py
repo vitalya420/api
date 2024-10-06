@@ -1,7 +1,6 @@
 from sanic import Blueprint
 
 from .auth import auth
-from .client import client
 from .token import token
 from .business import business
 

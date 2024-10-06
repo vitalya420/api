@@ -7,7 +7,7 @@ from app.schemas.user import Realm
 mobile_api = Blueprint.group(mobile_api_v1, url_prefix="/mobile")
 
 
-@mobile_api.middleware("request") # noqa
+@mobile_api.middleware("request")  # noqa
 async def check_permissions(request: ApiRequest):
     if not request.jwt_payload:
         raise Unauthorized("Access token is not provided")

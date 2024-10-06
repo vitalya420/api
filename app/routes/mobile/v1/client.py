@@ -25,8 +25,6 @@ async def update_client(request: ApiRequest):
 
 
 @client.delete("/")
-@openapi.definition(
-    description="Delete client", secured={"token": []}
-)
+@openapi.definition(description="Delete client", secured={"token": []})
 async def delete_client(request: ApiRequest):
     return json({"ok": True, "message": "Delete client"})
