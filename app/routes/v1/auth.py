@@ -15,12 +15,12 @@ from http import HTTPStatus
 from sanic import Blueprint, json, BadRequest
 from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
-from sanic_ext.extensions.openapi.definitions import Response, Parameter
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app import ApiRequest
 from app.schemas import UserCreate, SuccessResponse
 from app.schemas.tokens import TokenPair
-from app.schemas.user import UserCodeConfirm
+from app.schemas.user import UserCodeConfirm, Realm
 from app.security import rules, otp_context_required, business_id_required
 from app.serializers import serialize_token_pair, serialize_pydantic
 from app.services import auth_service, otp_service, tokens_service, user_service
@@ -35,7 +35,6 @@ auth = Blueprint("auth", url_prefix="/auth")
             ref_template="#/components/schemas/{model}"
         )
     },
-    parameter=Parameter("X-Business-ID", str, "header", "Business ID", required=True),
     description="Request an OTP code to phone number. Then proceed with `/api/v1/confirm`",
     summary="Start authorization flow",
     response=[
@@ -49,7 +48,6 @@ auth = Blueprint("auth", url_prefix="/auth")
         )
     ],
 )
-@rules(business_id_required)
 @serializer(serialize_pydantic)
 @validate(UserCreate)
 async def request_auth(request: ApiRequest, body: UserCreate):
@@ -74,7 +72,6 @@ async def request_auth(request: ApiRequest, body: UserCreate):
             ref_template="#/components/schemas/{model}"
         )
     },
-    parameter=Parameter("X-Business-ID", str, "header", "Business ID", required=True),
     description="Confirm OTP code and get tokens",
     summary="Complete authorization flow",
     response=[
@@ -89,7 +86,7 @@ async def request_auth(request: ApiRequest, body: UserCreate):
     ],
 )
 @validate(UserCodeConfirm)
-@rules(otp_context_required, business_id_required)
+@rules(otp_context_required)
 async def confirm_auth(request: ApiRequest, body: UserCodeConfirm):
     """
     Confirm the OTP and issue JWT tokens.
@@ -105,6 +102,8 @@ async def confirm_auth(request: ApiRequest, body: UserCodeConfirm):
         user = await user_service.get_or_create(otp_context.destination)
         access, refresh = await tokens_service.with_context(
             {"request": request}
-        ).create_token_for_user(user, request.business_code)
+        ).create_tokens_for_user(user, realm=body.realm, business=body.business)
+
         return json(serialize_token_pair(access, refresh))
+
     raise BadRequest("Wrong OTP code")

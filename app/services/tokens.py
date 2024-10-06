@@ -9,15 +9,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.operators import eq
 
 from app.db import async_session_factory
-from app.models import RefreshToken, AccessToken
+from app.models import RefreshToken, AccessToken, User
 from app.types import TokenType, UserType, BusinessType, get_token_class, TokenPairType
 from app.utils import force_id, force_business_code
 from .base import BaseService
+from ..schemas.user import Realm
 
 
 class TokenService(BaseService):
     async def _create_tokens_using_context(
-        self, user_id: int, business: str, session: AsyncSession
+        self,
+        user_id: int,
+        session: AsyncSession,
+        *,
+        realm: Realm,
+        business: Optional[str] = None,
     ) -> TokenPairType:
         """
         Create a new pair of access and refresh tokens for a user.
@@ -27,7 +33,8 @@ class TokenService(BaseService):
 
         Args:
             user_id (int): The ID of the user for whom the tokens are being created.
-            business (str): The business code associated with the user.
+            business (Optional[str]): The business code associated with the user.
+            realm (Realm): The realm.
             session (AsyncSession): The database session to use for the operation.
 
         Returns:
@@ -39,7 +46,7 @@ class TokenService(BaseService):
         ip_addr = request.headers.get("X-Real-IP", "<no ip>")
         user_agent = request.headers.get("User-Agent", "<no agent>")
 
-        refresh = RefreshToken(user_id=user_id, business=business)
+        refresh = RefreshToken(user_id=user_id, realm=realm, business=business)
         session.add(refresh)
         await session.commit()
 
@@ -48,6 +55,7 @@ class TokenService(BaseService):
             business=business,
             ip_addr=ip_addr,
             user_agent=user_agent,
+            realm=realm,
             refresh_token_jti=refresh.jti,
         )
         session.add(access)
@@ -130,7 +138,9 @@ class TokenService(BaseService):
 
             new_tokens = await self.with_context(
                 {"session": session}
-            ).create_token_for_user(access.user_id, access.business)
+            ).create_tokens_for_user(
+                access.user_id, realm=access.realm, business=access.business
+            )
         await asyncio.gather(
             *[self.cache_delete(key) for key in keys_to_remove_from_cache]
         )
@@ -242,25 +252,35 @@ class TokenService(BaseService):
         )
         return counter
 
-    async def create_token_for_user(
-        self, user: UserType, business: BusinessType
+    async def create_tokens_for_user(
+        self, user: UserType, *, realm: Realm, business: Optional[BusinessType] = None
     ) -> TokenPairType:
         """
         Create a new access and refresh token pair for a user.
 
         Args:
             user (UserType): The user for whom the tokens are being created.
+            realm (Realm): The realm the tokens are being created.
             business (BusinessType): The business associated with the user.
 
         Returns:
             Tuple[AccessToken, RefreshToken]: The created access and refresh tokens.
         """
+        if realm == Realm.mobile and business is None:
+            raise BadRequest("For mobile app business id should be provided.")
+
         async with self.get_session() as session:
             access, refresh = await self._create_tokens_using_context(
-                force_id(user), force_business_code(business), session
+                force_id(user),
+                session,
+                realm=realm,
+                business=business if realm == Realm.mobile else None,
             )
         await self.save_tokens_in_cache(access, refresh)
         return access, refresh
+
+    async def create_token_for_webui(self, user: User):
+        pass
 
     async def list_user_issued_tokens_tokens(
         self, user: UserType, business: BusinessType, limit: int = 0, offset: int = 0

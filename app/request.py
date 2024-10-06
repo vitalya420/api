@@ -3,6 +3,7 @@ from typing import Dict, Union
 from sanic import Request
 
 from app.models import AccessToken, User
+from app.schemas.user import Realm
 from app.utils.lazy import create_lazy_services_factory
 from app.utils.tokens import decode_token
 from app.services import tokens_service, user_service
@@ -50,6 +51,9 @@ class ApiRequest(Request):
         """If access token is provided then return business code from it"""
         if self._access_token:
             self._business_code = self._access_token.business
-        elif self._business_code is None:
-            self._business_code = self.headers.get("X-Business-ID")
         return self._business_code
+
+    @property
+    def realm(self):
+        if self.jwt_payload and self.jwt_payload.get("realm"):
+            return Realm(self.jwt_payload["realm"])

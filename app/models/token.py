@@ -1,18 +1,19 @@
 import datetime
 import uuid
-from typing import Self
 
-from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
 
 from app.config import config
 from app.db import Base
 from app.mixins.cacheable import CacheableMixin
+from app.schemas.user import Realm
 
 
 class Token(Base, CacheableMixin):
     __abstract__ = True
 
     jti = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    realm = Column(Enum(Realm), nullable=True)
 
     def get_key(self) -> str:
         return f"{self.__tablename__}:{self.jti}"
@@ -48,7 +49,7 @@ class AccessToken(Token):
     __tablename__ = "access_tokens"
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    business = Column(String)
+    business = Column(String, ForeignKey("business.code"), nullable=True)
     ip_addr = Column(String, nullable=False)
     user_agent = Column(String, nullable=False, default="<unknown>")
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)

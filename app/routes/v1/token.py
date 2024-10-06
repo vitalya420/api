@@ -82,7 +82,7 @@ async def get_all_tokens(request: ApiRequest):
     ],
     secured={"token": []},
 )
-@rules(login_required, business_id_required)
+@rules(login_required)
 async def logout(request: ApiRequest):
     """
     Revoke the current user's access token.

@@ -7,7 +7,7 @@ from sanic.log import logger
 from app.redis import connect
 from app.config import config
 from app.request import ApiRequest
-from app.routes import api, gateway
+from app.routes import api
 from app.services import BaseService
 
 app = Sanic(__name__, request_class=ApiRequest)
@@ -20,7 +20,7 @@ app.extend(
         }
     }
 )
-app.blueprint([api, gateway])
+app.blueprint([api])
 
 description_md = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "docs/description.md"

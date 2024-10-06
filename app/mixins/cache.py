@@ -174,5 +174,5 @@ class RedisCacheMixin(ABC):
             *getter_args, **getter_kwargs
         )
         if instance is not None:
-            await cls.cache_set(instance.get_key(), bytes(instance))
+            await cls.cache_set(instance.get_key(), bytes(instance), ex=60 * 60)
         return instance

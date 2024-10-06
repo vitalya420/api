@@ -7,6 +7,7 @@ from sanic_ext.extensions.openapi import openapi
 @openapi.component
 class Token(BaseModel):
     jti: str
+    realm: str
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
 
