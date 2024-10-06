@@ -2,10 +2,10 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
-from app.db import Base
+from app.mixins import CacheableModelMixin
 
 
-class User(Base):
+class User(CacheableModelMixin):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)

@@ -80,15 +80,15 @@ class TokenService(BaseService):
             result = await session.execute(query)
             access_token = result.scalars().first()
             if access_token is None:
-                return
+                return False
             refresh_jti = access_token.refresh_token_jti
 
             amount = await self._revoke_token_by_jti("access", access_token.jti, session)
             await self._revoke_token_by_jti("refresh", refresh_jti, session)
 
         await asyncio.gather(
-            self.cache_delete(f'token:access:{access_token.jti}'),
-            self.cache_delete(f'token:refresh:{access_token.refresh_token_jti}'),
+            self.cache_delete(AccessToken.lookup_key(access_token.jti)),
+            self.cache_delete(RefreshToken.lookup_key(access_token.refresh_token_jti)),
         )
 
         return not not amount
@@ -114,12 +114,12 @@ class TokenService(BaseService):
             if not refresh:
                 raise BadRequest("This refresh token is not valid")
             await self._revoke_token_by_jti("refresh", refresh_jti, session)
-            keys_to_remove_from_cache.append(f"token:refresh:{refresh.jti}")
+            keys_to_remove_from_cache.append(RefreshToken.lookup_key(refresh_jti))
 
             access = await self._get_access_token_by_refresh_jti(refresh_jti, session)
             if access.is_alive():
                 await self._revoke_token_by_jti("access", access.jti, session)
-            keys_to_remove_from_cache.append(f"token:access:{access.jti}")
+            keys_to_remove_from_cache.append(RefreshToken.lookup_key(access.refresh_token_jti))
 
             new_tokens = await (self.
                                 with_context({'session': session}).
@@ -143,8 +143,8 @@ class TokenService(BaseService):
             await self._revoke_token_by_jti("access", access_token.jti, session)
             await self._revoke_token_by_jti("refresh", access_token.refresh_token_jti, session)
         await asyncio.gather(
-            self.cache_delete(f'token:access:{access_token.jti}'),
-            self.cache_delete(f'token:refresh:{access_token.refresh_token_jti}'),
+            self.cache_delete(AccessToken.lookup_key(access_token.jti)),
+            self.cache_delete(RefreshToken.lookup_key(access_token.refresh_token_jti)),
         )
 
     async def get_access_token_by_jti(self, jti: str) -> Union[AccessToken, None]:
@@ -195,7 +195,7 @@ class TokenService(BaseService):
                 eq(AccessToken.user_id, force_id(user)),
                 eq(AccessToken.business, force_business_code(business)),
                 eq(AccessToken.revoked, False),
-                AccessToken.expires_at >= datetime.now() # noqa
+                AccessToken.expires_at >= datetime.now()  # noqa
             ),
         )
         async with self.get_session() as session:
@@ -214,9 +214,10 @@ class TokenService(BaseService):
                 await self._revoke_token_by_jti("refresh", refresh_jti, session)
 
                 keys_to_remove_from_cache.extend([
-                    f"token:access:{access_jti}",
-                    f"token:refresh:{refresh_jti}"
+                    AccessToken.lookup_key(access_jti),
+                    RefreshToken.lookup_key(refresh_jti),
                 ])
+
                 counter += 1
         await asyncio.gather(*[self.cache_delete(key) for key in keys_to_remove_from_cache])
         return counter
@@ -268,29 +269,6 @@ class TokenService(BaseService):
             result = await session.execute(query)
             return result.scalars().all()
 
-    async def get_access_token_with_cache(self, jti: str) -> Union[AccessToken, None]:
-        """
-        Retrieve an access token using its unique identifier (JTI) from the cache or database.
-
-        This asynchronous method first attempts to fetch the access token from a cache using the provided
-        JTI (JSON Web Token ID). If the token is found in the cache, it is deserialized and returned.
-        If the token is not present in the cache, the method queries the database for the access token
-        associated with the given JTI. If a token is found in the database, it is saved in the cache
-        for future retrieval.
-
-        Args:
-            jti (str): The unique identifier for the access token.
-
-        Returns:
-            Union[AccessToken, None]: The access token if found (either in cache or database),
-                                       or None if no token is available.
-        """
-        key = f"token:access:{jti}"
-        token = await self.with_cache(
-            key, self.get_access_token_by_jti, jti
-        )
-        return token
-
     async def save_tokens_in_cache(self, *tokens: Union[AccessToken, RefreshToken]) -> None:
         """
         Save multiple tokens in the cache.
@@ -298,7 +276,7 @@ class TokenService(BaseService):
         Args:
             tokens (Union[AccessToken, RefreshToken]): The tokens to save in the cache.
         """
-        await asyncio.gather(*[self.save_token_in_cache(token) for token in tokens])
+        await asyncio.gather(*[self.cache_object(token) for token in tokens])
 
     async def remove_tokens_from_cache(self, *tokens: Union[AccessToken, RefreshToken]) -> None:
         """
@@ -307,27 +285,29 @@ class TokenService(BaseService):
         Args:
             tokens (Union[AccessToken, RefreshToken]): The tokens to remove from the cache.
         """
-        await asyncio.gather(*[self.remove_token_from_cache(token) for token in tokens])
+        await asyncio.gather(*[self.cache_delete_object(token) for token in tokens])
 
-    async def save_token_in_cache(self, token: Union[AccessToken, RefreshToken]) -> None:
+    async def get_access_token_with_cache(self, jti: str) -> Union[AccessToken, None]:
         """
-       Save a single token in the cache.
+        Retrieve an access token from the cache or compute it if not found.
 
-       Args:
-           token (Union[AccessToken, RefreshToken]): The token to save in the cache.
-       """
-        type_ = "access" if isinstance(token, AccessToken) else "refresh"
-        await self.cache_set(f"token:{type_}:{token.jti}", pickle.dumps(token))
-
-    async def remove_token_from_cache(self, token: Union[AccessToken, RefreshToken]) -> None:
-        """
-        Remove a single token from the cache.
+        This method attempts to retrieve an access token associated with the
+        given JWT ID (jti) from the cache. If the access token is not found
+        in the cache, it calls the `get_access_token_by_jti` method to
+        compute the access token, caches it, and then returns it.
 
         Args:
-            token (Union[AccessToken, RefreshToken]): The token to remove from the cache.
+            jti (str): The JWT ID (jti) associated with the access token to be retrieved.
+
+        Returns:
+            Union[AccessToken, None]: The cached access token if found, or the newly
+                                       computed access token if not found, or None if
+                                       no access token is available.
         """
-        type_ = "access" if isinstance(token, AccessToken) else "refresh"
-        await self.cache_delete(f"token:{type_}:{token.jti}")
+        return await self.with_cache(
+            AccessToken, jti,
+            self.get_access_token_by_jti, jti
+        )
 
     @staticmethod
     async def _get_access_token_by_refresh_jti(refresh_jti: str, session: AsyncSession) -> Union[AccessToken, None]:
@@ -366,7 +346,7 @@ class TokenService(BaseService):
             )
         ).values(revoked=True)
         result = await session.execute(query)
-        return result.rowcount # noqa
+        return result.rowcount  # noqa
 
     @staticmethod
     async def _get_token(type_: TokenType, jti: str, session: AsyncSession) -> Union[AccessToken, RefreshToken, None]:

@@ -23,12 +23,8 @@ class BusinessService(BaseService):
     async def get_business(self, business_id: int):
         async with self.get_session() as session:
             instance = await self._get_business(business_id, session)
-        await self.set_business_in_cache(instance)
+        await self.cache_object(instance)
         return instance
-
-    async def set_business_in_cache(self, business: Business):
-        key = f"business:{business.id}"
-        await self.cache_set(key, pickle.dumps(business))
 
     @staticmethod
     async def _get_business(business_id: int, session: AsyncSession):

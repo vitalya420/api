@@ -2,10 +2,10 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 
-from app.db import Base
+from app.mixins.model import CacheableModelMixin
 
 
-class OTP(Base):
+class OTP(CacheableModelMixin):
     """
     Represents a One-Time Password (OTP) entry in the database.
 
@@ -28,7 +28,6 @@ class OTP(Base):
 
     __tablename__ = 'otps'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     destination = Column(String)
     code = Column(String)
     sent_at = Column(DateTime)

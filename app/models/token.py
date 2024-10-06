@@ -1,17 +1,31 @@
 import datetime
 import uuid
+from typing import Self
 
 from sqlalchemy import (Column, String, Integer,
                         ForeignKey, DateTime, Boolean)
 
 from app.config import config
 from app.db import Base
+from app.mixins.cacheable import CacheableMixin
 
 
-class RefreshToken(Base):
-    __tablename__ = 'refresh_tokens'
+class Token(Base, CacheableMixin):
+    __abstract__ = True
 
     jti = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    def get_key(self) -> str:
+        return f"{self.__tablename__}:{self.jti}"
+
+    @classmethod
+    def lookup_key(cls, key: str) -> str:
+        return f"{cls.__tablename__}:{key}"
+
+
+class RefreshToken(Token):
+    __tablename__ = 'refresh_tokens'
+
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     revoked = Column(Boolean, nullable=False, default=False)
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
@@ -27,10 +41,9 @@ class RefreshToken(Base):
         return f"<RefreshToken(jti='{self.jti}', user_id={self.user_id})>"
 
 
-class AccessToken(Base):
+class AccessToken(Token):
     __tablename__ = 'access_tokens'
 
-    jti = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     business = Column(String)
     ip_addr = Column(String, nullable=False)
