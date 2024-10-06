@@ -29,7 +29,6 @@ class UserService(BaseService):
         async with self.get_session() as session:
             instance = User(phone=phone)
             session.add(instance)
-        await self.cache_object(instance)
         return instance
 
     async def get_or_create(self, phone: str):

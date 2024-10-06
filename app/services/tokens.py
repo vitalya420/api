@@ -119,7 +119,7 @@ class TokenService(BaseService):
             access = await self._get_access_token_by_refresh_jti(refresh_jti, session)
             if access.is_alive():
                 await self._revoke_token_by_jti("access", access.jti, session)
-            keys_to_remove_from_cache.append(RefreshToken.lookup_key(access.refresh_token_jti))
+            keys_to_remove_from_cache.append(AccessToken.lookup_key(access.jti))
 
             new_tokens = await (self.
                                 with_context({'session': session}).
