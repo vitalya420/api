@@ -20,8 +20,8 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app import ApiRequest
 from app.schemas import UserCreate, SuccessResponse
 from app.schemas.tokens import TokenPair
-from app.schemas.user import UserCodeConfirm, Realm
-from app.security import rules, otp_context_required, business_id_required
+from app.schemas.user import UserCodeConfirm
+from app.security import rules, otp_context_required
 from app.serializers import serialize_token_pair, serialize_pydantic
 from app.services import auth_service, otp_service, tokens_service, user_service
 

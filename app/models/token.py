@@ -4,23 +4,16 @@ import uuid
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
 
 from app.config import config
-from app.db import Base
-from app.mixins.cacheable import CacheableMixin
+from app.mixins.model import CachableModelNoFieldsMixin
 from app.schemas.user import Realm
 
 
-class Token(Base, CacheableMixin):
+class Token(CachableModelNoFieldsMixin):
     __abstract__ = True
+    __primary_key__ = "jti"
 
     jti = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     realm = Column(Enum(Realm), nullable=True)
-
-    def get_key(self) -> str:
-        return f"{self.__tablename__}:{self.jti}"
-
-    @classmethod
-    def lookup_key(cls, key: str) -> str:
-        return f"{cls.__tablename__}:{key}"
 
 
 class RefreshToken(Token):
@@ -35,7 +28,7 @@ class RefreshToken(Token):
         default=lambda: datetime.datetime.utcnow()
         + datetime.timedelta(days=int(config["REFRESH_TOKEN_EXPIRE_DAYS"]) or 14),
     )
-    business = Column(String)
+    business_code = Column(String, ForeignKey("business.code"), nullable=True)
 
     def is_alive(self):
         now = datetime.datetime.utcnow()
@@ -49,7 +42,7 @@ class AccessToken(Token):
     __tablename__ = "access_tokens"
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    business = Column(String, ForeignKey("business.code"), nullable=True)
+    business_code = Column(String, ForeignKey("business.code"), nullable=True)
     ip_addr = Column(String, nullable=False)
     user_agent = Column(String, nullable=False, default="<unknown>")
     issued_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)

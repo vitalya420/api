@@ -46,13 +46,13 @@ class TokenService(BaseService):
         ip_addr = request.headers.get("X-Real-IP", "<no ip>")
         user_agent = request.headers.get("User-Agent", "<no agent>")
 
-        refresh = RefreshToken(user_id=user_id, realm=realm, business=business)
+        refresh = RefreshToken(user_id=user_id, realm=realm, business_code=business)
         session.add(refresh)
         await session.commit()
 
         access = AccessToken(
             user_id=user_id,
-            business=business,
+            business_code=business,
             ip_addr=ip_addr,
             user_agent=user_agent,
             realm=realm,
@@ -269,7 +269,10 @@ class TokenService(BaseService):
         if realm == Realm.mobile and business is None:
             raise BadRequest("For mobile app business id should be provided.")
 
-        if await business_service.get_business_by_code_with_cache(business) is None:
+        if (
+            business
+            and await business_service.get_business_by_code_with_cache(business) is None
+        ):
             raise NotFound(f"Business with code {business} not found.")
 
         async with self.get_session() as session:

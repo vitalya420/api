@@ -2,7 +2,8 @@ from sanic import Blueprint
 
 from .mobile import mobile_api
 from .web import web_api
+from .common import common_api
 
-from .v1 import api_v1
+blueprints = (mobile_api, web_api, common_api)
 
-api = Blueprint.group(api_v1, mobile_api, web_api, url_prefix="/api")
+api = Blueprint.group(*blueprints, url_prefix="/api")

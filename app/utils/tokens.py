@@ -13,7 +13,7 @@ def encode_token(token: Union[AccessToken, RefreshToken]):
         "jti": token.jti,
         "user_id": token.user_id,
         "realm": token.realm,
-        "business": token.business,
+        "business": token.business_code,
         "issued_at": int(token.issued_at.timestamp()),
         "expires_at": int(token.expires_at.timestamp()),
     }

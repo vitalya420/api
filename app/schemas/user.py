@@ -1,16 +1,18 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 from sanic_ext.extensions.openapi import openapi
 
+from app.schemas.business import BusinessResponse
+from app.schemas.enums import Realm
 from app.utils.phone import normalize_phone_number
 
 
 @openapi.component
-class Realm(str, Enum):
-    web = "web"
-    mobile = "mobile"
+class AuthMethod(str, Enum):
+    password = "password"
+    otp = "otp"
 
 
 class _HasPhone:
@@ -41,3 +43,12 @@ class UserCodeConfirm(BaseModel, _HasPhone):
     otp: str
     realm: Realm
     business: Optional[str] = None
+
+
+@openapi.component
+class WebUserResponse(BaseModel):
+    phone: str
+    businesses: List[BusinessResponse]
+
+    class Config:
+        from_attributes = True

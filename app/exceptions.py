@@ -15,3 +15,23 @@ class InvalidPhoneNumber(BadRequest):
 
 class SMSCooldown(ServiceUnavailable):
     message = "SmsCooldown has been exceeded."
+
+
+class UserExists(Exception):
+    pass
+
+
+class UserDoesNotExist(Exception):
+    pass
+
+
+class WrongPassword(Exception):
+    pass
+
+
+class UserHasNoBusinesses(Exception):
+    pass
+
+
+class YouAreRetardedError(Exception):
+    pass

@@ -10,12 +10,11 @@ class BusinessCreate(BaseModel):
 
 @openapi.component
 class Business(BaseModel):
+    code: str
     name: str
-    owner_id: int
 
 
 @openapi.component
 class BusinessResponse(Business):
-
     class Config:
         from_attributes = True

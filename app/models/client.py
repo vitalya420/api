@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, String
 
-from app.mixins.model import CacheableModelMixin
+from app.mixins.model import CachableModelWithDateTimeFieldsMixin
 
 
-class BusinessClient(CacheableModelMixin):
-    __tablename__ = "business_client"
+class BusinessClient(CachableModelWithDateTimeFieldsMixin):
+    __tablename__ = "clients"
 
-    user_id = Column(Integer, ForeignKey("users.id"))
-    business_id = Column(Integer, ForeignKey("business.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    business_code = Column(String, ForeignKey("business.code"), nullable=False)

@@ -1,11 +1,20 @@
 from datetime import timedelta, datetime
 
 from app.db import async_session_factory
-from app.exceptions import SMSCooldown
+from app.exceptions import (
+    SMSCooldown,
+    UserDoesNotExist,
+    WrongPassword,
+    UserHasNoBusinesses,
+    YouAreRetardedError,
+)
 from app.services.otp import otp_service
 from app.tasks import send_sms_to_phone
 from app.utils.rand import random_code
+from .tokens import tokens_service
+from .user import user_service
 from .base import BaseService
+from ..schemas.enums import Realm
 
 
 class AuthorizationService(BaseService):
@@ -15,10 +24,10 @@ class AuthorizationService(BaseService):
         business: str,
         *,
         code_lifetime: timedelta = timedelta(minutes=5),
-        sms_cooldown: timedelta = timedelta(seconds=1),
+        sms_cooldown: timedelta = timedelta(seconds=30),
         revoke_old: bool = True,
         sms_limit: int = 10,
-        sms_limit_time: timedelta = timedelta(hours=3)
+        sms_limit_time: timedelta = timedelta(hours=3),
     ) -> str:
         """
         Send a one-time password (OTP) to the specified phone number.
@@ -85,6 +94,23 @@ class AuthorizationService(BaseService):
                 )
             await session.refresh(otp_instance)
             return code
+
+    async def business_admin_login(self, phone: str, password: str):
+        async with self.get_session() as session:
+            user = await user_service.with_context({"session": session}).get_user(phone)
+            if not user:
+                raise UserDoesNotExist(f"User with phone {phone} does not exists.")
+            if not user.businesses:
+                raise UserHasNoBusinesses(f"User has no businesses to manage.")
+            if user.businesses and not user.password:
+                raise YouAreRetardedError("How the fuck user even registered?")
+            if not user.check_password(password):
+                raise WrongPassword
+
+            token_pair = await tokens_service.with_context(
+                {"session": session, "request": self.context["request"]}
+            ).create_tokens_for_user(user=user, realm=Realm.web)
+        return user, *token_pair
 
 
 auth_service = AuthorizationService(async_session_factory)

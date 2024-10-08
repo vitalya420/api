@@ -1,18 +1,19 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 
-from app.mixins.model import CacheableModelMixin
+from app.mixins.model import CachableModelNoFieldsMixin
 from app.utils.rand import random_business_code
 
 
-class Business(CacheableModelMixin):
+class Business(CachableModelNoFieldsMixin):
     __tablename__ = "business"
+    __primary_key__ = "code"
 
     code = Column(String(12), primary_key=True, default=random_business_code)
     name = Column(String(255), nullable=False)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    def get_key(self) -> str:
-        return f"{self.__tablename__}:{self.code}"
+    owner = relationship("User", back_populates="businesses")
 
     def __repr__(self):
-        return f"<Business(id={self.id}, code='{self.code}', name='{self.name}')>"
+        return f"<Business(code='{self.code}', name='{self.name}', owner_id={self.owner_id})>"
