@@ -1,4 +1,5 @@
 from typing import Union, Optional
+from typing import Union, Callable, Type, Awaitable
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from app.db import async_session_factory
 from app.models import User
 from .base import BaseService
 from .business import business_service
-from ..exceptions import UserExists, YouAreRetardedError
+from app.exceptions import UserExists, YouAreRetardedError
 
 
 class UserService(BaseService):
@@ -93,6 +94,9 @@ class UserService(BaseService):
 
     async def get_user_by_id_with_cache(self, user_id: int) -> Union[User, None]:
         return await self.with_cache(User, user_id, self.get_user_by_id, user_id)
+
+    async def get_user_by_phone_with_cache(self, phone: str) -> Union[User, None]:
+        return await self.with_cache(User, phone, self.get_user, phone)
 
 
 user_service = UserService(async_session_factory)

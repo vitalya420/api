@@ -139,7 +139,7 @@ class TokenService(BaseService):
             new_tokens = await self.with_context(
                 {"session": session}
             ).create_tokens_for_user(
-                access.user_id, realm=access.realm, business=access.business
+                access.user_id, realm=access.realm, business=access.business_code
             )
         await asyncio.gather(
             *[self.cache_delete(key) for key in keys_to_remove_from_cache]
@@ -285,6 +285,39 @@ class TokenService(BaseService):
         await self.save_tokens_in_cache(access, refresh)
         return access, refresh
 
+    async def list_user_issued_tokens(
+        self,
+        user: UserType,
+        realm: Realm,
+        business: Optional[BusinessType] = None,
+        limit: int = 0,
+        offset: int = 0,
+    ):
+
+        and_clause = and_(
+            AccessToken.user_id == force_id(user),
+            AccessToken.realm == realm,
+        )
+        if realm == Realm.mobile:
+            if business is None:
+                raise BadRequest("For mobile app business id should be provided.")
+
+            eq_ = eq(AccessToken.business_code, force_business_code(business))
+            and_clause = and_(
+                and_clause, eq(AccessToken.business_code, force_business_code(business))
+            )
+
+        query = select(AccessToken).where(and_clause)
+        async with self.get_session() as session:
+            result = await session.execute(query)
+            return result.scalars().all()
+
+    async def _get_user_access_tokens(
+        self,
+        user_id: int,
+    ):
+        pass
+
     async def list_user_issued_tokens_tokens(
         self, user: UserType, business: BusinessType, limit: int = 0, offset: int = 0
     ) -> List[AccessToken]:
@@ -306,7 +339,7 @@ class TokenService(BaseService):
         query = select(AccessToken).where(
             and_(
                 eq(AccessToken.user_id, force_id(user)),
-                eq(AccessToken.business, force_business_code(business)),
+                eq(AccessToken.business_code, force_business_code(business)),
                 eq(AccessToken.revoked, False),
                 AccessToken.expires_at >= datetime.utcnow(),
             )

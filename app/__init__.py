@@ -3,6 +3,7 @@ from textwrap import dedent
 
 from sanic import Sanic
 from sanic.log import logger
+from sanic_ext import Extend
 
 from app.redis import connect
 from app.config import config
@@ -21,6 +22,12 @@ app.extend(
     }
 )
 app.blueprint([api])
+
+
+@app.middleware("response")
+async def cors(req, res):
+    res.headers["Access-Control-Allow-Origin"] = "*"
+
 
 description_md = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "docs/description.md"

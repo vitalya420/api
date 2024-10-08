@@ -50,7 +50,7 @@ class ApiRequest(Request):
     def business_code(self):
         """If access token is provided then return business code from it"""
         if self._access_token:
-            self._business_code = self._access_token.business
+            self._business_code = self._access_token.business_code
         return self._business_code
 
     @property

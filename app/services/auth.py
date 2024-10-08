@@ -97,7 +97,9 @@ class AuthorizationService(BaseService):
 
     async def business_admin_login(self, phone: str, password: str):
         async with self.get_session() as session:
-            user = await user_service.with_context({"session": session}).get_user(phone)
+            user = await user_service.with_context(
+                {"session": session}
+            ).get_user_by_phone_with_cache(phone)
             if not user:
                 raise UserDoesNotExist(f"User with phone {phone} does not exists.")
             if not user.businesses:
