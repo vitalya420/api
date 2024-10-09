@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum
 
 from app.mixins.model import CachableModelWithIDMixin
+from app.schemas.enums import Realm
 
 
 class OTP(CachableModelWithIDMixin):
@@ -30,6 +31,7 @@ class OTP(CachableModelWithIDMixin):
 
     destination = Column(String)
     business = Column(String, ForeignKey("business.code"))
+    realm = Column(Enum(Realm), nullable=True)
     code = Column(String)
     sent_at = Column(DateTime)
     expires_at = Column(DateTime)

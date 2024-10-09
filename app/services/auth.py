@@ -14,13 +14,14 @@ from app.utils.rand import random_code
 from .tokens import tokens_service
 from .user import user_service
 from .base import BaseService
-from ..schemas.enums import Realm
+from app.schemas.enums import Realm
 
 
 class AuthorizationService(BaseService):
     async def send_otp(
         self,
         phone: str,
+        realm: Realm,
         business: str,
         *,
         code_lifetime: timedelta = timedelta(minutes=5),
@@ -40,6 +41,7 @@ class AuthorizationService(BaseService):
         Args:
             phone (str): The phone number to which the OTP will be sent,
                          formatted in international format (e.g., +1234567890).
+            realm (Realm): realm web or mobile.
             business (str): Business code.
             code_lifetime (timedelta, optional): The duration for which the
                                                   OTP is valid. Defaults to
@@ -68,38 +70,36 @@ class AuthorizationService(BaseService):
             Exception: If there is an error in sending the OTP, such as
                        exceeding the SMS limit or invalid phone number format.
         """
-        now = datetime.utcnow()
+        now = datetime.utcnow()  # noqa
 
         async with self.get_session() as session:
-            async with session.begin():
-                otp_service_ = otp_service.with_context({"session": session})
-                # Check is cooldown has passed
-                existing_otp = await otp_service_.get_otp(phone, now - sms_cooldown)
-                if existing_otp:
-                    raise SMSCooldown("Too many SMS")
+            otp_service_ = otp_service.with_context({"session": session})
+            if existing_otps := await otp_service_.get_otps(
+                phone, business, now - sms_cooldown
+            ):
+                raise SMSCooldown("Too many SMS")
 
-                # Check for limit
-                limit_result = await otp_service_.get_otp(phone, now - sms_limit_time)
-                sms_count = len(limit_result)
-                if sms_count >= sms_limit:
-                    raise SMSCooldown("Too many SMS")
+            limit_result = await otp_service_.get_otps(
+                phone, business, now - sms_limit_time
+            )
+            if len(limit_result) >= sms_limit:
+                raise SMSCooldown("Too many SMS")
 
-                if revoke_old:
-                    row_affected = await otp_service_.revoke_otps(phone)
+            if revoke_old:
+                await otp_service_.revoke_otps(phone, business)
 
-                code = random_code()
-                await send_sms_to_phone(phone, code)
-                otp_instance = await otp_service_.create(
-                    phone, code, now, now + code_lifetime
-                )
-            await session.refresh(otp_instance)
-            return code
+            code = random_code()
+            await otp_service_.create(
+                phone, realm, business, code, now, now + code_lifetime
+            )
+            await send_sms_to_phone(phone, code)
+        return code
 
     async def business_admin_login(self, phone: str, password: str):
         async with self.get_session() as session:
-            user = await user_service.with_context(
-                {"session": session}
-            ).get_user_by_phone_with_cache(phone)
+            user = await user_service.with_context({"session": session}).get_user(
+                phone=phone, use_cache=False
+            )
             if not user:
                 raise UserDoesNotExist(f"User with phone {phone} does not exists.")
             if not user.businesses:
@@ -110,8 +110,8 @@ class AuthorizationService(BaseService):
                 raise WrongPassword
 
             token_pair = await tokens_service.with_context(
-                {"session": session, "request": self.context["request"]}
-            ).create_tokens_for_user(user=user, realm=Realm.web)
+                {"session": session}
+            ).create_tokens(user.id, self.context["request"], Realm.web)
         return user, *token_pair
 
 

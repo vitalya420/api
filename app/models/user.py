@@ -7,6 +7,7 @@ from app.mixins import CachableModelWithIDMixin
 
 class User(CachableModelWithIDMixin):
     __tablename__ = "users"
+    __cache_key__ = "phone"
 
     phone = Column(String(32), nullable=False, unique=True, index=True)
     password = Column(String(255), nullable=True)

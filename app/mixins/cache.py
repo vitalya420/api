@@ -136,7 +136,7 @@ class RedisCacheMixin(ABC):
     async def with_cache(
         cls,
         class_: Type[CacheableMixin],
-        pk: Union[str, int],
+        key: Union[str, int],
         getter: Callable[..., Awaitable[CacheableMixin]],
         *getter_args,
         **getter_kwargs
@@ -153,7 +153,7 @@ class RedisCacheMixin(ABC):
             class_ (Type[CacheableMixin]): The class type of the cacheable object.
                                             This class must implement the `CacheableMixin`
                                             interface and provide a `lookup_key` method.
-            pk (Union[str, int]): The primary key or unique identifier to look up
+            key (Union[str, int]): The primary key or unique identifier to look up
                                   in the cache. This value is used to generate
                                   the lookup cache key.
             getter (Callable[..., Awaitable[CacheableMixin]]): An asynchronous callable
@@ -166,7 +166,7 @@ class RedisCacheMixin(ABC):
             Union[CacheableMixin, None]: The cached instance if found, or the newly computed
                                           instance if not found, or None if no instance is available.
         """
-        lookup_key = class_.lookup_key(pk)
+        lookup_key = class_.lookup_key(key)
         cached = await cls.cache_get(lookup_key)
         if cached:
             return class_.from_bytes(cached)

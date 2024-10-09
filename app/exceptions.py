@@ -33,5 +33,9 @@ class UserHasNoBusinesses(Exception):
     pass
 
 
+class BusinessDoesNotExist(Exception):
+    pass
+
+
 class YouAreRetardedError(Exception):
     pass

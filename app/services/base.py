@@ -1,7 +1,13 @@
+from contextlib import contextmanager, asynccontextmanager
+from typing import Type, Union, List, TypeVar
+
 from redis.asyncio import Redis
 
 from app.mixins.cache import RedisCacheMixin
 from app.mixins.session import SessionManagementMixin
+from app.repositories.base import BaseRepository
+
+T = TypeVar("T", bound=BaseRepository)
 
 
 class BaseService(RedisCacheMixin, SessionManagementMixin):
@@ -19,6 +25,7 @@ class BaseService(RedisCacheMixin, SessionManagementMixin):
     """
 
     _redis = None
+    __repository_class__: Type[BaseRepository]
 
     @classmethod
     def set_redis(cls, instance: Redis):
@@ -35,3 +42,13 @@ class BaseService(RedisCacheMixin, SessionManagementMixin):
                               for caching operations.
         """
         cls._redis = instance
+
+    @asynccontextmanager
+    async def get_repo(self, *repos: Type[T]) -> Union[T, List[T]]:
+        async with self.get_session() as session:  # yields new async session
+            if len(repos) == 0 and self.__repository_class__ is not None:
+                yield self.__repository_class__(session)
+            elif len(repos) > 1:
+                yield [repo(session) for repo in repos]
+            else:
+                yield repos[0](session)

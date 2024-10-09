@@ -4,6 +4,7 @@ from sanic import Request, Unauthorized, BadRequest, Forbidden
 
 from app.request import ApiRequest
 from app.exceptions import BusinessIDRequired
+from app.schemas.auth import AuthConfirmRequest
 from app.schemas.user import UserCodeConfirm
 from app.services import otp_service
 
@@ -41,15 +42,15 @@ def admin_access(f):
 
 def otp_context_required(f):
     @wraps(f)
-    async def decorated(request: Request, body: UserCodeConfirm, *args, **kwargs):
+    async def decorated(request: ApiRequest, body: AuthConfirmRequest, *args, **kwargs):
         if not (phone := body.phone_normalize()):
             raise BadRequest("Invalid phone number")
-        otp_code = await otp_service.get_unexpired_otp(phone)
+        otp_code = await otp_service.get_unexpired_otp(phone, body.business)
         if otp_code is None:
             raise BadRequest("OTP code is expired")
-        if otp_code.destination != body.phone_normalize():
+        if otp_code.destination != phone:
             raise BadRequest("Bruh, wtf")  # this should never happen
-        request.ctx.otp = otp_code
+        request.set_otp_context(otp_code)
         return await f(request, body, *args, **kwargs)
 
     return decorated

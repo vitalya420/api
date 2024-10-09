@@ -7,7 +7,7 @@ from app.utils.rand import random_business_code
 
 class Business(CachableModelNoFieldsMixin):
     __tablename__ = "business"
-    __primary_key__ = "code"
+    __cache_key__ = "code"
 
     code = Column(String(12), primary_key=True, default=random_business_code)
     name = Column(String(255), nullable=False)

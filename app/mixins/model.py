@@ -14,11 +14,11 @@ class CachableModelNoFieldsMixin(Base, CacheableMixin):
     generating cache keys. It requires subclasses to define a primary key.
 
     Attributes:
-        __primary_key__ (str): The name of the primary key attribute for the model.
+        __cache_key__ (str): The name of the primary key attribute for the model.
     """
 
     __abstract__ = True
-    __primary_key__ = None
+    __cache_key__ = None
 
     @classmethod
     def lookup_key(cls, key: str) -> str:
@@ -50,9 +50,9 @@ class CachableModelNoFieldsMixin(Base, CacheableMixin):
         Returns:
             str: A unique cache key for the model instance.
         """
-        if self.__primary_key__ is None:
+        if self.__cache_key__ is None:
             raise NotImplementedError("Primary key is not defined.")
-        value = getattr(self, self.__primary_key__)
+        value = getattr(self, self.__cache_key__)
         return f"{self.__tablename__}:{value}"
 
 
@@ -63,12 +63,12 @@ class CachableModelWithIDMixin(CachableModelNoFieldsMixin):
     This class defines a primary key field named 'id' for use in subclasses.
 
     Attributes:
-        __primary_key__ (str): The name of the primary key attribute for the model.
+        __cache_key__ (str): The name of the primary key attribute for the model.
         id (Column): The primary key column of type Integer.
     """
 
     __abstract__ = True
-    __primary_key__ = "id"
+    __cache_key__ = "id"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 

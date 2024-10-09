@@ -7,6 +7,7 @@ from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app import ApiRequest
+from app.schemas.response import SuccessResponse
 from app.schemas.tokens import RefreshTokenRequest, TokenPair
 from app.security import rules, login_required
 from app.serializers import serialize_issued_tokens, serialize_token_pair
@@ -57,3 +58,65 @@ async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
         return json(serialize_token_pair(*issued))
     except jwt.exceptions.PyJWTError:
         raise BadRequest("Not a token")
+
+
+@tokens.post("/logout")
+@openapi.definition(
+    summary="Logout",
+    description="Revokes current access token.",
+    response=[
+        Response(
+            {
+                "application/json": SuccessResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
+    secured={"token": []},
+)
+@rules(login_required)
+async def logout(request: ApiRequest):
+    """
+    Revoke the current user's access token.
+
+    This endpoint invalidates the access token associated with the
+    authenticated user, effectively logging them out.
+    """
+
+    await tokens_service.revoke_access_token(await request.get_access_token())
+
+    return json({"ok": True})
+
+
+@tokens.post("/<jti>/revoke")
+@openapi.definition(
+    summary="Revoke",
+    description="Revoke token by it's jti",
+    response=[
+        Response(
+            {
+                "application/json": SuccessResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
+    secured={"token": []},
+)
+@rules(login_required)
+async def revoke_token(request: ApiRequest, jti: str):
+    """
+    Revoke an access token by its JTI (JWT ID).
+
+    This endpoint invalidates a specific access token identified
+    by its JTI, preventing its further use.
+    """
+    revoked = await tokens_service.user_revokes_access_token_by_jti(
+        await request.get_user(), jti
+    )
+    if revoked:
+        return json({"ok": True, "jti": jti})
+    raise BadRequest

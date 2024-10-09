@@ -2,17 +2,18 @@ from typing import Dict, Union
 
 from sanic import Request
 
-from app.models import AccessToken, User
+from app.models import AccessToken, User, OTP
 from app.schemas.user import Realm
 from app.utils.lazy import create_lazy_services_factory
 from app.utils.tokens import decode_token
-from app.services import tokens_service, user_service
+from app.services import tokens_service, user_service, otp_service
 
 
 class ApiRequest(Request):
     def __init__(self, *sanic_args, **sanic_kwargs):
         super().__init__(*sanic_args, **sanic_kwargs)
         self.services = create_lazy_services_factory(context={"request": self})
+        self.otp_context: Union[OTP, None] = None
 
         self._business_code: Union[str, None] = None
         self._jwt_payload: Union[Dict[str, Union[str, int, bool]], None] = None
@@ -38,6 +39,9 @@ class ApiRequest(Request):
                     access_token.user_id
                 )
         return self._user
+
+    def set_otp_context(self, otp: OTP):
+        self.otp_context = otp
 
     @property
     def jwt_payload(self):

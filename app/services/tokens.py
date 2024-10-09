@@ -14,9 +14,14 @@ from app.utils import force_id, force_business_code
 from .business import business_service
 from .base import BaseService
 from app.schemas.user import Realm
+from app.repositories.tokens import TokensRepository
+
+# from app.request import ApiRequest
 
 
 class TokenService(BaseService):
+    __repository_class__ = TokensRepository
+
     async def _create_tokens_using_context(
         self,
         user_id: int,
@@ -464,6 +469,22 @@ class TokenService(BaseService):
         )
         result = await session.execute(query)
         return result.scalars().first()
+
+    async def create_tokens(
+        self,
+        user_id: int,
+        request: "ApiRequest",
+        realm: Realm,
+        business_code: Optional[str] = None,
+    ):
+        async with self.get_repo() as repo:
+            return await repo.create_tokens(
+                user_id,
+                realm,
+                business_code,
+                request.headers.get("X-Real-IP", "<no ip>"),
+                request.headers.get("User-Agent", "<no user agent>"),
+            )
 
 
 tokens_service = TokenService(async_session_factory)
