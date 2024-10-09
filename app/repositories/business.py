@@ -2,7 +2,7 @@ from typing import Union
 
 from sqlalchemy import select
 
-from .base import BaseRepository
+from app.base import BaseRepository
 from app.models import User, Business
 from app.utils import force_id
 

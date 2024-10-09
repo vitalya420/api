@@ -13,7 +13,7 @@ from app.tasks import send_sms_to_phone
 from app.utils.rand import random_code
 from .tokens import tokens_service
 from .user import user_service
-from .base import BaseService
+from app.base import BaseService
 from app.schemas.enums import Realm
 
 

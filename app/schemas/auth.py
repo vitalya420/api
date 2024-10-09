@@ -18,6 +18,5 @@ class AuthRequest(BaseModel):
 @openapi.component
 class AuthConfirmRequest(BaseModel, _HasPhone):
     phone: str
-    realm: Realm
     otp: str
     business: str

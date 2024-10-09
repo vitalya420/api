@@ -1,13 +1,13 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 
-from app.mixins.model import CachableModelNoFieldsMixin
+from app.base import BaseCachableModel
 from app.utils.rand import random_business_code
 
 
-class Business(CachableModelNoFieldsMixin):
+class Business(BaseCachableModel):
     __tablename__ = "business"
-    __cache_key__ = "code"
+    __cache_key_attr__ = "code"
 
     code = Column(String(12), primary_key=True, default=random_business_code)
     name = Column(String(255), nullable=False)

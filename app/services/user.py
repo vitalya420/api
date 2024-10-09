@@ -3,7 +3,7 @@ from typing import Optional
 from app.db import async_session_factory
 from app.models import User
 from app.repositories.user import UserRepository
-from .base import BaseService
+from app.base import BaseService
 
 
 class UserService(BaseService):

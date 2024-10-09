@@ -6,7 +6,7 @@ from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
-from app import ApiRequest
+from app.request import ApiRequest
 from app.schemas.response import SuccessResponse
 from app.schemas.tokens import RefreshTokenRequest, TokenPair
 from app.security import rules, login_required

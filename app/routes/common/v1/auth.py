@@ -2,7 +2,7 @@ from sanic import Blueprint, json, BadRequest
 from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
 
-from app import ApiRequest
+from app.request import ApiRequest
 from app.exceptions import (
     WrongPassword,
     UserHasNoBusinesses,
@@ -55,7 +55,6 @@ async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
         )
     },
 )
-@serializer(serialize_pydantic)
 @validate(AuthRequest)
 async def authorization(request: ApiRequest, body: AuthRequest):
     if not body.password and body.realm == Realm.web:
@@ -79,6 +78,6 @@ async def authorization(request: ApiRequest, body: AuthRequest):
 
     elif body.realm == Realm.mobile:
         await auth_service.send_otp(body.phone, body.realm, body.business)
-        return SuccessResponse(message="OTP sent successfully.")
+        return json(SuccessResponse(message="OTP sent successfully.").model_dump())
 
     return json({"ok": True})

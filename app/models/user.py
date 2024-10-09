@@ -2,12 +2,12 @@ import bcrypt
 from sqlalchemy import Column, String, Boolean
 from sqlalchemy.orm import relationship
 
-from app.mixins import CachableModelWithIDMixin
+from app.base import BaseCachableModelWithID
 
 
-class User(CachableModelWithIDMixin):
+class User(BaseCachableModelWithID):
     __tablename__ = "users"
-    __cache_key__ = "phone"
+    __cache_key_attr__ = "phone"
 
     phone = Column(String(32), nullable=False, unique=True, index=True)
     password = Column(String(255), nullable=True)

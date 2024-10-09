@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from .base import BaseRepository
+from app.base import BaseRepository
 from app.models import AccessToken, RefreshToken
 from app.schemas.enums import Realm
 

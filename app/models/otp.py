@@ -2,11 +2,11 @@ from datetime import datetime
 
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum
 
-from app.mixins.model import CachableModelWithIDMixin
 from app.schemas.enums import Realm
+from app.base import BaseCachableModelWithID
 
 
-class OTP(CachableModelWithIDMixin):
+class OTP(BaseCachableModelWithID):
     """
     Represents a One-Time Password (OTP) entry in the database.
 

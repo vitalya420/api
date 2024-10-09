@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import async_session_factory
 from app.models import Business
-from .base import BaseService
+from app.base import BaseService
 
 
 class BusinessService(BaseService):

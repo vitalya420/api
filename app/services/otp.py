@@ -4,7 +4,7 @@ from typing import Union
 from app.db import async_session_factory
 from app.models import OTP
 from app.repositories.otp import OTPRepository
-from .base import BaseService
+from app.base import BaseService
 from ..schemas.enums import Realm
 
 

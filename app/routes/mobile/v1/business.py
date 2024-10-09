@@ -1,7 +1,7 @@
 from sanic import Blueprint, json
 from sanic_ext.extensions.openapi import openapi
 
-from app import ApiRequest
+from app.request import ApiRequest
 
 business = Blueprint("mobile-business", url_prefix="/business")
 

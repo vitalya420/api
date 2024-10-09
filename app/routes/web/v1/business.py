@@ -2,7 +2,7 @@ from sanic import Blueprint, json
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 
-from app import ApiRequest
+from app.request import ApiRequest
 from app.schemas.business import BusinessCreate
 from app.security import rules
 from app.security.decorators import admin_access

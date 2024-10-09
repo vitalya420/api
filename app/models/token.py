@@ -4,11 +4,11 @@ import uuid
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
 
 from app.config import config
-from app.mixins.model import CachableModelNoFieldsMixin
 from app.schemas.user import Realm
+from app.base import BaseCachableModel
 
 
-class Token(CachableModelNoFieldsMixin):
+class Token(BaseCachableModel):
     __abstract__ = True
     __primary_key__ = "jti"
 

@@ -1,6 +1,6 @@
 from sanic import Blueprint, json
 
-from app import ApiRequest
+from app.request import ApiRequest
 
 user = Blueprint("web-user", url_prefix="/user")
 

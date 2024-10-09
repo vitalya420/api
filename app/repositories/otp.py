@@ -3,7 +3,7 @@ from typing import Union, Sequence
 
 from sqlalchemy import select, and_, update
 
-from .base import BaseRepository
+from app.base import BaseRepository
 from .business import BusinessRepository
 from app.exceptions import BusinessDoesNotExist
 from app.models import OTP

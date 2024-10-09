@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Integer, ForeignKey, String
 
-from app.mixins.model import CachableModelWithDateTimeFieldsMixin
+from app.base import BaseCachableModelWithIDAndDateTimeFields
 
 
-class BusinessClient(CachableModelWithDateTimeFieldsMixin):
+class BusinessClient(BaseCachableModelWithIDAndDateTimeFields):
     __tablename__ = "clients"
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
