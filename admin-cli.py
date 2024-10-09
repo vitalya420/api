@@ -4,7 +4,7 @@ import time
 from app import BaseService
 from app.redis import connect
 from app.schemas.enums import Realm
-from app.services import user_service, tokens_service
+from app.services import user_service, tokens_service, business_service
 
 
 async def create_business(name: str, owner_id: int):
@@ -25,12 +25,8 @@ async def main():
     #     is_admin=True,
     # )
 
-    start = time.time()
-    issued = await tokens_service.create_tokens(
-        1, Realm.web
-    )
-    print(issued)
-
+    # await user_service.set_user_password("+380956409567", 'fuckyeah')
+    await business_service.create_business("Coffee Shop", (await user_service.get_user(phone="+380956409567")).id)
 
 if __name__ == '__main__':
     asyncio.run(main())

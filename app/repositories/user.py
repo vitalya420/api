@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from app.models import User
 from .base import BaseRepository
-from app.exceptions import UserExists, YouAreRetardedError
+from app.exceptions import UserExists, YouAreRetardedError, UserDoesNotExist
 from .business import BusinessRepository
 
 
@@ -46,8 +46,14 @@ class UserRepository(BaseRepository):
         where_clause = None
         if pk:
             where_clause = User.id == pk
-        if phone:
+        elif phone:
             where_clause = User.phone == phone
         query = select(User).where(where_clause).options(joinedload(User.businesses))
         res = await self.session.execute(query)
         return res.scalars().first()
+
+    async def set_user_password(self, phone: str, password: str):
+        user = await self.get_user(phone=phone)
+        if not user:
+            raise UserDoesNotExist("User with phone does not exist.")
+        user.set_password(password)

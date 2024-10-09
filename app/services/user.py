@@ -43,5 +43,9 @@ class UserService(BaseService):
                 )
             return await user_repo.get_user(pk=pk, phone=phone)
 
+    async def set_user_password(self, phone: str, password: str):
+        async with self.get_repo() as user_repo:
+            await user_repo.set_user_password(phone, password)
+
 
 user_service = UserService(async_session_factory)
