@@ -4,15 +4,13 @@ from sanic import Request
 
 from app.models import AccessToken, User, OTP
 from app.schemas.user import Realm
-from app.utils.lazy import create_lazy_services_factory
+from app.services import tokens_service, user_service
 from app.utils.tokens import decode_token
-from app.services import tokens_service, user_service, otp_service
 
 
 class ApiRequest(Request):
     def __init__(self, *sanic_args, **sanic_kwargs):
         super().__init__(*sanic_args, **sanic_kwargs)
-        self.services = create_lazy_services_factory(context={"request": self})
         self.otp_context: Union[OTP, None] = None
 
         self._business_code: Union[str, None] = None
@@ -26,8 +24,8 @@ class ApiRequest(Request):
             and self.jwt_payload is not None
             and self.jwt_payload.get("type", "") == "access"
         ):
-            self._access_token = await tokens_service.get_access_token_with_cache(
-                self.jwt_payload["jti"]
+            self._access_token = await tokens_service.get_access_token(
+                self.jwt_payload["jti"], use_cache=True
             )
         return self._access_token
 
@@ -35,8 +33,8 @@ class ApiRequest(Request):
         if self._user is None:
             access_token = await self.get_access_token()
             if access_token:
-                self._user = await user_service.get_user_by_id_with_cache(
-                    access_token.user_id
+                self._user = await user_service.get_user(
+                    pk=access_token.user_id, use_cache=True
                 )
         return self._user
 

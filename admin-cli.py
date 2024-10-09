@@ -26,7 +26,10 @@ async def main():
     # )
 
     # await user_service.set_user_password("+380956409567", 'fuckyeah')
-    await business_service.create_business("Coffee Shop", (await user_service.get_user(phone="+380956409567")).id)
+    # await business_service.create_business("Coffee Shop", (await user_service.get_user(phone="+380956409567")).id)
+
+    user = await user_service.get_user(pk=1, use_cache=True)
+    print(user)
 
 if __name__ == '__main__':
     asyncio.run(main())

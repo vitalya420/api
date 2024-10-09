@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Union, Callable, Type, Awaitable
+from typing import Union, Callable, Type, Awaitable, Sequence
 
 from redis.asyncio import Redis
 
@@ -54,7 +54,7 @@ class RedisCacheMixin(ABC):
             await cls._redis.set(key, value, *args, **kwargs)
 
     @classmethod
-    async def cache_get(cls, key: str) -> bytes:
+    async def cache_get(cls, key: Union[str, bytes]) -> bytes:
         """
         Get a value from the Redis cache.
 
@@ -63,7 +63,7 @@ class RedisCacheMixin(ABC):
         is ignored, and None is returned.
 
         Args:
-            key (str): The key for which the cached value is to be retrieved.
+            key (Union[str, bytes]): The key for which the cached value is to be retrieved.
 
         Returns:
             Union[bytes, None]: The cached value if found, or None if not.
@@ -139,7 +139,7 @@ class RedisCacheMixin(ABC):
         key: Union[str, int],
         getter: Callable[..., Awaitable[CacheableMixin]],
         *getter_args,
-        **getter_kwargs
+        **getter_kwargs,
     ) -> Union[CacheableMixin, None]:
         """
         Retrieve a value from the cache or compute it using a getter function.
@@ -167,14 +167,45 @@ class RedisCacheMixin(ABC):
                                           instance if not found, or None if no instance is available.
         """
         lookup_key = class_.lookup_key(key)
-        cached = await cls.cache_get(lookup_key)
-        if cached:
-            return class_.from_bytes(cached)
+        if result := await cls.get_instance_from_cache_by_key(lookup_key, class_):
+            return result
+
+        ref_keys = class_.reference_keys(key)
+        main_key = await cls.search_main_key(ref_keys) if ref_keys else None
+        if main_key and (
+            result := await cls.get_instance_from_cache_by_key(main_key, class_)
+        ):
+            return result
+
         instance: Union[CacheableMixin, None] = await getter(
             *getter_args, **getter_kwargs
         )
         if instance is not None:
-            await cls.cache_set(
-                instance.get_key(), bytes(instance), ex=60 * 60
-            )  # TODO: No magic numbers
+            await cls.cache_instance(instance)
         return instance
+
+    @classmethod
+    async def get_instance_from_cache_by_key(
+        cls, key: Union[str, bytes], class_: Type[CacheableMixin]
+    ) -> Union[CacheableMixin, None]:
+        cached = await cls.cache_get(key)
+        if cached:
+            return class_.from_bytes(cached)
+
+    @classmethod
+    async def search_main_key(cls, reference_keys: Sequence[str]) -> Union[bytes, None]:
+        for reference_key in reference_keys:
+            cached = await cls.cache_get(reference_key)
+            if cached:
+                return cached
+
+    @classmethod
+    async def cache_instance(cls, instance: CacheableMixin, ex=60 * 60):
+        key_or_keys = instance.get_key()
+        if isinstance(key_or_keys, str):
+            await cls.cache_set(key_or_keys, bytes(instance), ex=ex)
+        elif isinstance(key_or_keys, tuple):
+            main_key, references = key_or_keys
+            await cls.cache_set(main_key, bytes(instance), ex=ex)
+            for ref in references:
+                await cls.cache_set(ref, main_key, ex=ex)

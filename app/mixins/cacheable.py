@@ -49,6 +49,10 @@ class CacheableMixin(object):
         """
         pass
 
+    @classmethod
+    def reference_keys(cls, key):
+        pass
+
     def to_bytes(self) -> bytes:
         """
         Serialize the object to bytes.

@@ -7,7 +7,10 @@ from app.base import BaseCachableModelWithID
 
 class User(BaseCachableModelWithID):
     __tablename__ = "users"
-    __cache_key_attr__ = "phone"
+    __cache_key_attr__ = [
+        "id",
+        "phone",
+    ]  # id is main key and phone is reference to "users:<that id>"
 
     phone = Column(String(32), nullable=False, unique=True, index=True)
     password = Column(String(255), nullable=True)

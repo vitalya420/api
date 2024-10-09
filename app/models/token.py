@@ -10,7 +10,7 @@ from app.base import BaseCachableModel
 
 class Token(BaseCachableModel):
     __abstract__ = True
-    __primary_key__ = "jti"
+    __cache_key_attr__ = "jti"
 
     jti = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     realm = Column(Enum(Realm), nullable=True)

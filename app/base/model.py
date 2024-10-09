@@ -1,4 +1,5 @@
 import datetime
+from typing import Union, Sequence, List, Tuple
 
 from sqlalchemy import Column, Integer, DateTime
 
@@ -29,19 +30,63 @@ class BaseModelWithIDAndDateTimeFields(BaseModelWithID, BaseModelWithDateTimeFie
 
 class BaseCachableModel(Base, CacheableMixin):
     __abstract__ = True
-    __cache_key_attr__ = None
+    # Cache key attribute should be unique field to create key in storage
+    # If there will be more than one key - first key will be real value
+    # other - references to first key
+    # for example users:1 - <real user value>
+    # then ref:users:phone:+11111111 - will be reference to users:1
 
-    def get_key(self) -> str:
+    __cache_key_attr__: Union[str, Sequence[str], None] = None
+
+    def get_key(self) -> Union[str, Tuple[str, List[str]]]:
         if self.__cache_key_attr__ is None:
             raise NotImplementedError(
                 "__cache_key_attr__ is not set. Set or override get_key(self)"
             )
-        value = getattr(self, self.__cache_key_attr__)
-        return f"{self.__tablename__}:{value}"
+        if isinstance(self.__cache_key_attr__, str):
+            value = getattr(self, self.__cache_key_attr__)
+            return f"{self.__tablename__}:{value}"
+        elif (
+            isinstance(self.__cache_key_attr__, Sequence)
+            and len(self.__cache_key_attr__) > 0
+        ):
+            main_key = (
+                f"{self.__tablename__}:{getattr(self, self.__cache_key_attr__[0])}"
+            )
+
+            ref_keys = [
+                f"ref:{self.__tablename__}:{attr_}:{getattr(self, attr_)}"
+                for attr_ in self.__cache_key_attr__[1:]
+            ]
+            if ref_keys:
+                return main_key, ref_keys
+            return main_key
 
     @classmethod
     def lookup_key(cls, key: str) -> str:
         return f"{cls.__tablename__}:{key}"
+
+    @classmethod
+    def reference_keys(cls, key: str) -> List[str]:
+        if (
+            isinstance(cls.__cache_key_attr__, Sequence)
+            and len(cls.__cache_key_attr__) > 1
+        ):
+            ref_keys = [
+                f"ref:{cls.__tablename__}:{attr_}:{key}"
+                for attr_ in cls.__cache_key_attr__[1:]
+            ]
+            return ref_keys
+
+    def is_reference_attribute(self, key: str) -> bool:
+        if isinstance(self.__cache_key_attr__, Sequence):
+            return key in self.__cache_key_attr__[1:]
+        return False
+
+    def is_main_attribute(self, key: str) -> bool:
+        if isinstance(self.__cache_key_attr__, Sequence):
+            return key == self.__cache_key_attr__[0]
+        return key == self.__cache_key_attr__
 
 
 class BaseCachableModelWithID(BaseCachableModel, BaseModelWithID):
