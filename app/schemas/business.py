@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 from sanic_ext.extensions.openapi import openapi
 
@@ -16,5 +18,13 @@ class Business(BaseModel):
 
 @openapi.component
 class BusinessResponse(Business):
+    class Config:
+        from_attributes = True
+
+
+@openapi.component
+class BusinessesResponse(BaseModel):
+    businesses: List[BusinessResponse]
+
     class Config:
         from_attributes = True

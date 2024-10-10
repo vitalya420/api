@@ -2,9 +2,9 @@ from typing import Dict, Union
 
 from sanic import Request
 
-from app.models import AccessToken, User, OTP
+from app.models import AccessToken, User, OTP, Business
 from app.schemas.user import Realm
-from app.services import tokens_service, user_service
+from app.services import tokens_service, user_service, business_service
 from app.utils.tokens import decode_token
 
 
@@ -37,6 +37,11 @@ class ApiRequest(Request):
                     pk=access_token.user_id, use_cache=True
                 )
         return self._user
+
+    async def get_business(self) -> Union[Business, None]:
+        if self.business_code is None:
+            return None
+        return await business_service.get_business(self.business_code, use_cache=True)
 
     def set_otp_context(self, otp: OTP):
         self.otp_context = otp

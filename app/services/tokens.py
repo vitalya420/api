@@ -1,20 +1,12 @@
-import asyncio
-from datetime import datetime
-from typing import Union, Optional, Tuple, List, Sequence
+from typing import Union, Optional
 
-from sanic import Request, BadRequest, NotFound
-from sqlalchemy import and_, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.operators import eq
+from sanic import Request
 
-from app.db import async_session_factory
-from app.models import RefreshToken, AccessToken
-from app.types import TokenType, UserType, BusinessType, get_token_class, TokenPairType
-from app.utils import force_id, force_business_code
-from .business import business_service
 from app.base import BaseService
-from app.schemas.user import Realm
+from app.db import async_session_factory
+from app.models import AccessToken
 from app.repositories.tokens import TokensRepository
+from app.schemas.user import Realm
 
 
 class TokenService(BaseService):

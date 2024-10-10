@@ -37,5 +37,9 @@ class BusinessDoesNotExist(Exception):
     pass
 
 
+class UnableToCreateBusiness(Exception):
+    pass
+
+
 class YouAreRetardedError(Exception):
     pass
