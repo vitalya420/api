@@ -28,8 +28,23 @@ async def main():
     # await user_service.set_user_password("+380956409567", 'fuckyeah')
     # await business_service.create_business("Coffee Shop", (await user_service.get_user(phone="+380956409567")).id)
 
-    user = await user_service.get_user(pk=1, use_cache=True)
-    print(user)
+    start = time.time()
+    for _ in range(5000):
+        user = await user_service.get_user(phone="+380956409567", use_cache=True)
+    end = time.time()
+    print(f"Time elapsed using reference {end - start:02f} seconds")
+
+    start = time.time()
+    for _ in range(5000):
+        user = await user_service.get_user(pk=1, use_cache=True)
+    end = time.time()
+    print(f"Time elapsed using main key {end - start:02f} seconds")
+
+    start = time.time()
+    for _ in range(5000):
+        user = await user_service.get_user(pk=1, use_cache=False)
+    end = time.time()
+    print(f"Time elapsed with no caching {end - start:02f} seconds")
 
 if __name__ == '__main__':
     asyncio.run(main())

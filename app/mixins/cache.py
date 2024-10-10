@@ -36,7 +36,9 @@ class RedisCacheMixin(ABC):
         cls._redis = instance
 
     @classmethod
-    async def cache_set(cls, key: str, value: bytes, *args, **kwargs) -> None:
+    async def cache_set(
+        cls, key: str, value: Union[bytes, str], *args, **kwargs
+    ) -> None:
         """
         Set a value in the Redis cache.
 
@@ -94,7 +96,7 @@ class RedisCacheMixin(ABC):
             TypeError: If the provided object does not implement the
                         `CacheableMixin` interface.
         """
-        await cls.cache_set(object_.get_key(), bytes(object_))
+        await cls.cache_instance(object_)
 
     @classmethod
     async def cache_delete_object(cls, object_: CacheableMixin) -> None:
@@ -170,7 +172,7 @@ class RedisCacheMixin(ABC):
         if result := await cls.get_instance_from_cache_by_key(lookup_key, class_):
             return result
 
-        ref_keys = class_.reference_keys(key)
+        ref_keys = class_.lookup_reference_keys(key)
         main_key = await cls.search_main_key(ref_keys) if ref_keys else None
         if main_key and (
             result := await cls.get_instance_from_cache_by_key(main_key, class_)
@@ -201,11 +203,9 @@ class RedisCacheMixin(ABC):
 
     @classmethod
     async def cache_instance(cls, instance: CacheableMixin, ex=60 * 60):
-        key_or_keys = instance.get_key()
-        if isinstance(key_or_keys, str):
-            await cls.cache_set(key_or_keys, bytes(instance), ex=ex)
-        elif isinstance(key_or_keys, tuple):
-            main_key, references = key_or_keys
-            await cls.cache_set(main_key, bytes(instance), ex=ex)
-            for ref in references:
-                await cls.cache_set(ref, main_key, ex=ex)
+        main_key = instance.get_key()
+        await cls.cache_set(main_key, bytes(instance), ex=ex)
+        ref_keys = instance.get_reference_keys()
+        print("ref keys", ref_keys)
+        for ref in ref_keys:
+            await cls.cache_set(ref, main_key, ex=ex)

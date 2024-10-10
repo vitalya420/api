@@ -1,16 +1,15 @@
 import pickle
 from abc import abstractmethod
-from typing import Self
+from typing import Self, List
 
 
 class CacheableMixin(object):
     """
     A mixin class that provides caching capabilities for objects.
 
-    This class defines an interface for cacheable objects, requiring
-    the implementation of a method to retrieve a unique cache key.
-    It also provides methods to serialize the object to bytes and
-    deserialize it back from bytes using the `pickle` module.
+    This mixin is designed to be inherited by classes that require caching functionality.
+    Subclasses must implement specific methods to define how caching keys are generated
+    and how instances are looked up in the cache.
     """
 
     @abstractmethod
@@ -25,6 +24,18 @@ class CacheableMixin(object):
             str: A unique key for the cacheable object.
         """
         pass
+
+    def get_reference_keys(self) -> List[str]:
+        """
+        Retrieve keys that should be referred to the main key (get_key()).
+
+        This method can be overridden by subclasses to provide additional
+        keys that are related to the main cache key.
+
+        Returns:
+            List[str]: A list of reference keys associated with the cacheable object.
+        """
+        return list()
 
     @classmethod
     @abstractmethod
@@ -50,8 +61,20 @@ class CacheableMixin(object):
         pass
 
     @classmethod
-    def reference_keys(cls, key):
-        pass
+    def lookup_reference_keys(cls, key: str) -> List[str]:
+        """
+        Generate a list of reference keys for the cacheable object.
+
+        This method can be overridden by subclasses to provide a list
+        of keys that are related to the main cache key.
+
+        Args:
+            key (str): The main key for which reference keys are to be generated.
+
+        Returns:
+            List[str]: A list of reference keys associated with the provided key.
+        """
+        return list()
 
     def to_bytes(self) -> bytes:
         """

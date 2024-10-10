@@ -1,50 +1,23 @@
 from sanic import Blueprint, json, BadRequest
-from sanic_ext import validate, serializer
+from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 
-from app.request import ApiRequest
 from app.exceptions import (
     WrongPassword,
     UserHasNoBusinesses,
     UserDoesNotExist,
     YouAreRetardedError,
 )
+from app.request import ApiRequest
 from app.schemas import SuccessResponse
 from app.schemas.auth import AuthRequest, AuthConfirmRequest
 from app.schemas.enums import Realm
 from app.security import otp_context_required
-from app.serializers import serialize_token_pair, serialize_pydantic
+from app.serializers import serialize_token_pair
 from app.serializers.user import serialize_web_user
 from app.services import auth_service, otp_service, user_service, tokens_service
 
 auth = Blueprint("auth", url_prefix="/auth")
-
-
-@auth.post("/confirm")
-@openapi.definition(
-    body={
-        "application/json": AuthConfirmRequest.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
-    },
-)
-@validate(AuthConfirmRequest)
-@otp_context_required
-async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
-    print(request.otp_context)
-    if request.otp_context:
-        if request.otp_context.code == body.otp:
-            await otp_service.set_code_used(request.otp_context)
-            user = await user_service.get_or_create(request.otp_context.destination)
-            tokens = await tokens_service.create_tokens(
-                user.id,
-                request=request,
-                realm=request.otp_context.realm,
-                business_code=request.otp_context.business,
-            )
-            return json(serialize_token_pair(*tokens))
-        return BadRequest("Wrong otp code.")
-    raise BadRequest
 
 
 @auth.post("/")
@@ -81,3 +54,29 @@ async def authorization(request: ApiRequest, body: AuthRequest):
         return json(SuccessResponse(message="OTP sent successfully.").model_dump())
 
     return json({"ok": True})
+
+
+@auth.post("/confirm")
+@openapi.definition(
+    body={
+        "application/json": AuthConfirmRequest.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+)
+@validate(AuthConfirmRequest)
+@otp_context_required
+async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
+    if request.otp_context:
+        if request.otp_context.code == body.otp:
+            await otp_service.set_code_used(request.otp_context)
+            user = await user_service.get_or_create(request.otp_context.destination)
+            tokens = await tokens_service.create_tokens(
+                user.id,
+                request=request,
+                realm=request.otp_context.realm,
+                business_code=request.otp_context.business,
+            )
+            return json(serialize_token_pair(*tokens))
+        raise BadRequest("Wrong otp code.")
+    raise BadRequest

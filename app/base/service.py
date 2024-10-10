@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Type, Union, TypeVar, List
+from typing import Type, Union, TypeVar, List, AsyncGenerator
 
 from redis.asyncio import Redis
 
@@ -21,7 +21,9 @@ class BaseService(RedisCacheMixin, SessionManagementMixin):
         cls._redis = instance
 
     @asynccontextmanager
-    async def get_repo(self, *repo_or_repos: Type[T]) -> Union[T, List[T]]:
+    async def get_repo(
+        self, *repo_or_repos: Type[T]
+    ) -> AsyncGenerator[Union[T, List[T]], None]:
         async with self.get_session() as session:
             # If there are no repo classes provided create instance
             # of __repository_class__

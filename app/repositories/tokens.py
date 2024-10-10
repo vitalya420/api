@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Tuple, TypeVar, Union, Type
+from typing import Optional, Tuple, TypeVar, Type
 
 from sqlalchemy import select, and_
 
