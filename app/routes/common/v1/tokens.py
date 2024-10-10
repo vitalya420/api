@@ -51,9 +51,7 @@ async def list_issued_tokens(request: ApiRequest):
 async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
     try:
         payload = decode_token(body.refresh_token)
-        issued = await tokens_service.with_context({"request": request}).refresh_tokens(
-            payload["jti"]
-        )
+        issued = await tokens_service.refresh_tokens(payload["jti"], request)
 
         return json(serialize_token_pair(*issued))
     except jwt.exceptions.PyJWTError:

@@ -206,6 +206,5 @@ class RedisCacheMixin(ABC):
         main_key = instance.get_key()
         await cls.cache_set(main_key, bytes(instance), ex=ex)
         ref_keys = instance.get_reference_keys()
-        print("ref keys", ref_keys)
         for ref in ref_keys:
             await cls.cache_set(ref, main_key, ex=ex)

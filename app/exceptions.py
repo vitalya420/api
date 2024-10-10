@@ -37,7 +37,15 @@ class BusinessDoesNotExist(Exception):
     pass
 
 
-class UnableToCreateBusiness(Exception):
+class UnableToCreateBusiness(BadRequest):
+    pass
+
+
+class BusinessCodeNotProvided(BadRequest):
+    pass
+
+
+class RefreshTokenNotFound(BadRequest):
     pass
 
 

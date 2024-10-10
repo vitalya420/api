@@ -38,6 +38,7 @@ class SessionManagementMixin(ABC):
         """
         self.session_factory: async_sessionmaker = session_factory
         self.context: Dict[Any, Any] = context or dict()
+        self._running_session: Union[AsyncSession, None] = None
 
     def get_running_session(self) -> Union[AsyncSession, None]:
         """
@@ -50,7 +51,7 @@ class SessionManagementMixin(ABC):
             Union[AsyncSession, None]: The currently running session if found,
                                         or None if no session is available.
         """
-        return self.context.get("session", None)
+        return self._running_session
 
     @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
@@ -75,6 +76,7 @@ class SessionManagementMixin(ABC):
         else:
             async with self.session_factory() as session:
                 try:
+                    self._running_session = session
                     yield session
                 except Exception as e:
                     await session.rollback()
@@ -101,3 +103,8 @@ class SessionManagementMixin(ABC):
         return self.__class__(
             session_factory=self.session_factory, context={**self.context, **context}
         )
+
+    def reuse_session(self):
+        if self._running_session is None:
+            raise RuntimeError("No running database session")
+        return self.with_context({**self.context, "session": self._running_session})

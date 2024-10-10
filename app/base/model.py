@@ -50,10 +50,7 @@ class BaseCachableModel(Base, CacheableMixin):
             isinstance(self.__cache_key_attr__, List)
             and len(self.__cache_key_attr__) > 0
         ):
-            main_key = (
-                f"{self.__tablename__}:{getattr(self, self.__cache_key_attr__[0])}"
-            )
-            return main_key
+            return f"{self.__tablename__}:{getattr(self, self.__cache_key_attr__[0])}"
 
     def get_reference_keys(self) -> List[str]:
         if not (
@@ -61,7 +58,6 @@ class BaseCachableModel(Base, CacheableMixin):
             and len(self.__cache_key_attr__) > 1
         ):
             return list()
-        print(self.__cache_key_attr__)
         return [
             f"ref:{self.__tablename__}:{attr_}:{getattr(self, attr_)}"
             for attr_ in self.__cache_key_attr__[1:]

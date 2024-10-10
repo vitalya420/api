@@ -2,6 +2,7 @@ import datetime
 import uuid
 
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
+from sqlalchemy.orm import relationship
 
 from app.config import config
 from app.schemas.user import Realm
@@ -29,6 +30,9 @@ class RefreshToken(Token):
         + datetime.timedelta(days=int(config["REFRESH_TOKEN_EXPIRE_DAYS"]) or 14),
     )
     business_code = Column(String, ForeignKey("business.code"), nullable=True)
+    access_token = relationship(
+        "AccessToken", back_populates="refresh_token", uselist=False
+    )
 
     def is_alive(self):
         now = datetime.datetime.utcnow()
@@ -54,6 +58,9 @@ class AccessToken(Token):
     )
     revoked = Column(Boolean, nullable=False, default=False)
     refresh_token_jti = Column(String, ForeignKey("refresh_tokens.jti"), nullable=False)
+    refresh_token = relationship(
+        "RefreshToken", back_populates="access_token", uselist=False
+    )
 
     @property
     def ip_address(self):
