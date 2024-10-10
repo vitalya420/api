@@ -4,7 +4,7 @@ from sanic_ext.extensions.openapi import openapi
 
 from app.request import ApiRequest
 from app.schemas.business import BusinessCreate, BusinessesResponse, BusinessResponse
-from app.security import rules
+from app.security import rules, login_required
 from app.security.decorators import admin_access
 from app.serializers.businesses import serialize_user_businesses
 from app.services import business_service
@@ -21,6 +21,7 @@ business = Blueprint("web-business", url_prefix="/business")
         ),
     },
 )
+@rules(login_required)
 async def get_business(request: ApiRequest):
     businesses = (await request.get_user()).businesses
     return json(serialize_user_businesses(businesses))
@@ -36,7 +37,7 @@ async def get_business(request: ApiRequest):
     secured={"token": []},
 )
 @validate(BusinessCreate)
-@rules(admin_access)
+@rules(login_required, admin_access)
 async def create_business(request: ApiRequest, body: BusinessCreate):
     instance = await business_service.create_business(
         name=body.name, owner=body.owner_id
