@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator
 
-from app.utils.phone import normalize_phone_number
+from app.utils import normalize_phone_number
 
 
 class HasPhone(BaseModel):

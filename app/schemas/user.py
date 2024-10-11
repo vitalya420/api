@@ -6,20 +6,13 @@ from sanic_ext.extensions.openapi import openapi
 
 from app.schemas.business import BusinessResponse
 from app.enums import Realm
-from app.utils.phone import normalize_phone_number
+from app.schemas.common import HasPhone
 
 
 @openapi.component
 class AuthMethod(str, Enum):
     password = "password"
     otp = "otp"
-
-
-class _HasPhone:
-    phone: str
-
-    def phone_normalize(self):
-        return normalize_phone_number(phone=self.phone)
 
 
 @openapi.component
@@ -30,7 +23,7 @@ class UserBase(BaseModel):
 
 
 @openapi.component
-class UserCreate(BaseModel, _HasPhone):
+class UserCreate(BaseModel, HasPhone):
     pass
 
 
@@ -39,7 +32,7 @@ class User(UserBase):
 
 
 @openapi.component
-class UserCodeConfirm(BaseModel, _HasPhone):
+class UserCodeConfirm(BaseModel, HasPhone):
     otp: str
     realm: Realm
     business: Optional[str] = None
