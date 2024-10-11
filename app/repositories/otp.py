@@ -4,7 +4,7 @@ from typing import Union, Sequence
 from sqlalchemy import select, and_, update
 
 from app.base import BaseRepository
-from .business import BusinessRepository
+from app.repositories.business import BusinessRepository
 from app.exceptions import BusinessDoesNotExist
 from app.models import OTP
 from app.enums import Realm

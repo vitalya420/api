@@ -11,8 +11,8 @@ from app.exceptions import (
 from app.services.otp import otp_service
 from app.tasks import send_sms_to_phone
 from app.utils import random_code
-from .tokens import tokens_service
-from .user import user_service
+from app.services.tokens import tokens_service
+from app.services.user import user_service
 from app.base import BaseService
 from app.enums import Realm
 

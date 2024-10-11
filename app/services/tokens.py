@@ -1,8 +1,7 @@
 import asyncio
 from typing import Union, Optional, Tuple
 
-from sanic import Request
-
+from app.request import ApiRequest
 from app.base import BaseService
 from app.db import async_session_factory
 from app.models import AccessToken, Business, RefreshToken
@@ -18,7 +17,7 @@ class TokenService(BaseService):
     async def create_tokens(
         self,
         user_id: int,
-        request: Request,
+        request: ApiRequest,
         realm: Realm,
         business_code: Optional[str] = None,
     ) -> Tuple[AccessToken, RefreshToken]:
@@ -52,7 +51,7 @@ class TokenService(BaseService):
             )
 
     async def refresh_tokens(
-        self, refresh_jti: str, request: Request
+        self, refresh_jti: str, request: ApiRequest
     ) -> Tuple[AccessToken, RefreshToken]:
         async with self.get_repo() as tokens_repo:
             # Revoke access and refresh tokens

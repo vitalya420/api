@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 from app.models import User
 from app.base import BaseRepository
 from app.exceptions import UserExists, YouAreRetardedError, UserDoesNotExist
-from .business import BusinessRepository
+from app.repositories.business import BusinessRepository
 
 
 class UserRepository(BaseRepository):
