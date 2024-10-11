@@ -1,18 +1,22 @@
 from http import HTTPStatus
 from textwrap import dedent
 
-from sanic import Blueprint, json, BadRequest, InternalServerError
-from sanic_ext import validate, serializer
+from sanic import Blueprint, BadRequest, InternalServerError
+from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
+from app.decorators import otp_context_required, pydantic_response
 from app.enums import Realm
 from app.request import ApiRequest
-from app.schemas.auth import AuthRequest, AuthConfirmRequest
-from app.schemas.response import AuthResponse, UserAuthorizedResponse, OTPSentResponse
-from app.schemas.tokens import TokenPair
-from app.security import otp_context_required
-from app.serializers import serialize_token_pair, serialize_pydantic
+from app.schemas import (
+    AuthRequest,
+    AuthConfirmRequest,
+    AuthResponse,
+    UserAuthorizedResponse,
+    OTPSentResponse,
+    TokenPair,
+)
 from app.services import auth_service, otp_service, user_service, tokens_service
 from app.utils.tokens import encode_token
 
@@ -114,7 +118,7 @@ auth = Blueprint("auth", url_prefix="/auth")
     summary="Authorize user",
 )
 @validate(AuthRequest)
-@serializer(serialize_pydantic)
+@pydantic_response
 async def authorization(request: ApiRequest, body: AuthRequest):
     if not body.password and body.realm == Realm.web:
         raise BadRequest("Authorization in WEB requires password.")
@@ -183,17 +187,20 @@ async def authorization(request: ApiRequest, body: AuthRequest):
 )
 @validate(AuthConfirmRequest)
 @otp_context_required
+@pydantic_response
 async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
     if request.otp_context:
         if request.otp_context.code == body.otp:
             await otp_service.set_code_used(request.otp_context)
             user = await user_service.get_or_create(request.otp_context.destination)
-            tokens = await tokens_service.create_tokens(
+            access, refresh = await tokens_service.create_tokens(
                 user.id,
                 request=request,
                 realm=request.otp_context.realm,
                 business_code=request.otp_context.business,
             )
-            return json(serialize_token_pair(*tokens))
+            return TokenPair(
+                access_token=encode_token(access), refresh_token=encode_token(refresh)
+            )
         raise BadRequest("Wrong otp code.")
     raise BadRequest

@@ -1,30 +1,68 @@
 from http import HTTPStatus
+from textwrap import dedent
 
 import jwt
-from sanic import Blueprint, json, BadRequest
+from sanic import Blueprint, BadRequest
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
+from app.decorators import rules, login_required, pydantic_response
 from app.request import ApiRequest
-from app.schemas.response import SuccessResponse
-from app.schemas.tokens import RefreshTokenRequest, TokenPair
-from app.security import rules, login_required
-from app.serializers import serialize_issued_tokens, serialize_token_pair
+from app.schemas import (
+    RefreshTokenRequest,
+    TokenPair,
+    TokensListPaginated,
+    SuccessResponse,
+)
 from app.services import tokens_service
-from app.utils.tokens import decode_token
+from app.utils.tokens import decode_token, encode_token
 
 tokens = Blueprint("tokens", url_prefix="/tokens")
 
 
 @tokens.get("/")
-@openapi.definition(secured={"token": []})
+@openapi.definition(
+    description=dedent(
+        """
+        ## Retrieve List of User's Issued Access Tokens
+        
+        This endpoint returns a list of access tokens that have been issued to the user.
+        
+        #### Example response
+        
+        ```json
+        {
+          "tokens": [
+            {
+              "jti": "f85c9095-1649-4931-be8c-f71d56027c93",
+              "realm": "web",
+              "ip_address": "127.0.0.1",
+              "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+            }
+          ]
+        }
+        ```
+        """
+    ),
+    response=[
+        Response(
+            {
+                "application/json": TokensListPaginated.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            }
+        )
+    ],
+    secured={"token": []},
+)
 @rules(login_required)
+@pydantic_response
 async def list_issued_tokens(request: ApiRequest):
     issued_tokens = await tokens_service.list_user_issued_tokens(
         await request.get_user(), request.realm, request.business_code
     )
-    return json(serialize_issued_tokens(issued_tokens))
+    return TokensListPaginated(tokens=issued_tokens)
 
 
 @tokens.post("/refresh")
@@ -34,8 +72,35 @@ async def list_issued_tokens(request: ApiRequest):
             ref_template="#/components/schemas/{model}"
         )
     },
-    summary="Refresh",
-    description="Create new token pair with refresh token",
+    description=dedent(
+        """
+        ## Issue new token pair with refresh token
+        
+        This endpoint allows users to obtain a new pair of tokens (access and refresh) using an existing refresh token. 
+        The request will succeed only if the following conditions are met:
+        
+        - The refresh token has not been used before.
+        - The user has not logged out using the associated access token.
+        - The access token has not been revoked.
+
+        #### Example request
+        
+        ```json
+        {
+          "refresh_token": "<refresh token>"
+        }
+        ```
+        
+        #### Example response
+        
+        ```json
+        {
+          "access_token": "<access token>",
+          "refresh_token": "<refresh token>"
+        }
+        ```
+        """
+    ),
     response=[
         Response(
             {
@@ -48,20 +113,28 @@ async def list_issued_tokens(request: ApiRequest):
     ],
 )
 @validate(json=RefreshTokenRequest)
+@pydantic_response
 async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
     try:
         payload = decode_token(body.refresh_token)
-        issued = await tokens_service.refresh_tokens(payload["jti"], request)
-
-        return json(serialize_token_pair(*issued))
+        access, refresh = await tokens_service.refresh_tokens(payload["jti"], request)
+        return TokenPair(
+            access_token=encode_token(access), refresh_token=encode_token(refresh)
+        )
     except jwt.exceptions.PyJWTError:
         raise BadRequest("Not a token")
 
 
 @tokens.post("/logout")
 @openapi.definition(
-    summary="Logout",
-    description="Revokes current access token.",
+    description=dedent(
+        """
+        ## Logout
+        
+        This endpoint revokes the current access token and its associated refresh token, 
+        effectively logging the user out. 
+        """
+    ),
     response=[
         Response(
             {
@@ -75,23 +148,24 @@ async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
     secured={"token": []},
 )
 @rules(login_required)
+@pydantic_response
 async def logout(request: ApiRequest):
-    """
-    Revoke the current user's access token.
-
-    This endpoint invalidates the access token associated with the
-    authenticated user, effectively logging them out.
-    """
-
     await tokens_service.revoke_access_token(await request.get_access_token())
-
-    return json({"ok": True})
+    return SuccessResponse(
+        message="You logged out successfully. Token has been revoked."
+    )
 
 
 @tokens.post("/<jti>/revoke")
 @openapi.definition(
-    summary="Revoke",
-    description="Revoke token by it's jti",
+    description=dedent(
+        """
+        ## Revoke an access token by its JTI (JWT ID).
+
+        This endpoint invalidates a specific access token using its JTI (JWT ID), preventing any further use. 
+        The associated refresh token is also revoked.
+        """
+    ),
     response=[
         Response(
             {
@@ -105,16 +179,11 @@ async def logout(request: ApiRequest):
     secured={"token": []},
 )
 @rules(login_required)
+@pydantic_response
 async def revoke_token(request: ApiRequest, jti: str):
-    """
-    Revoke an access token by its JTI (JWT ID).
-
-    This endpoint invalidates a specific access token identified
-    by its JTI, preventing its further use.
-    """
     revoked = await tokens_service.user_revokes_access_token_by_jti(
         await request.get_user(), jti
     )
     if revoked:
-        return json({"ok": True, "jti": jti})
+        return SuccessResponse(message="Token has been revoked.")
     raise BadRequest

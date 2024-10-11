@@ -1,7 +1,10 @@
 import random
 import re
 import string
-from typing import Protocol, Union
+from functools import wraps
+from typing import Protocol, Union, Callable
+
+from sanic import json
 
 
 class _HasID(Protocol):

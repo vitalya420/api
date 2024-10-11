@@ -21,6 +21,9 @@ class TokensListPaginated(BaseModel):
     # per_page: int
     tokens: List[Token] = []
 
+    class Config:
+        from_attributes = True
+
 
 @openapi.component
 class RefreshTokenRequest(BaseModel):

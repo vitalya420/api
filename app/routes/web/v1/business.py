@@ -4,8 +4,7 @@ from sanic_ext.extensions.openapi import openapi
 
 from app.request import ApiRequest
 from app.schemas.business import BusinessCreate, BusinessesResponse, BusinessResponse
-from app.security import rules, login_required
-from app.security.decorators import admin_access
+from app.decorators import rules, login_required, admin_access
 from app.serializers.businesses import serialize_user_businesses
 from app.services import business_service
 
