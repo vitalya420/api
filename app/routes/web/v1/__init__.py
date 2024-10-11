@@ -1,3 +1,17 @@
+"""
+This module contains the API for the web interface version 1.
+
+It imports and groups the user and business-related routes into a single
+Blueprint for better organization and management. The routes are prefixed with
+"/v1" to indicate that they belong to version 1 of the web API.
+
+Modules included:
+- user: Handles routes related to user functionalities, such as authentication
+  and user management.
+- business: Manages routes associated with business operations and related
+  functionalities.
+"""
+
 from sanic import Blueprint
 
 from .user import user
