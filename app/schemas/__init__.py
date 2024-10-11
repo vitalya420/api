@@ -8,3 +8,4 @@ from .auth import (
 )
 from .tokens import TokenPair, RefreshTokenRequest, TokensListPaginated
 from .response import SuccessResponse
+from .business import BusinessClientsPaginatedResponse

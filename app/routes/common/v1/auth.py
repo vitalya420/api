@@ -17,7 +17,14 @@ from app.schemas import (
     OTPSentResponse,
     TokenPair,
 )
-from app.services import auth_service, otp_service, user_service, tokens_service
+from app.schemas.business import AuthorizedClientResponse
+from app.services import (
+    auth_service,
+    otp_service,
+    user_service,
+    tokens_service,
+    business_service,
+)
 from app.utils.tokens import encode_token
 
 auth = Blueprint("auth", url_prefix="/auth")
@@ -169,15 +176,22 @@ async def authorization(request: ApiRequest, body: AuthRequest):
         
         ```json
         {
-          "access_token": "<access token>",
-          "refresh_token": "<refresh token>",
-        }
+          "client": {
+            "business_code": "FGRYOUAYDNKW",
+            "qr_code": "1234567890",
+            "bonuses": 0
+            "phone": "+15551234567"
+          },
+          "tokens": {
+            "access_token": "<access token>",
+            "refresh_token": "<refresh token>"
+          }
         ```
         """
     ),
     response=Response(
         {
-            "application/json": TokenPair.model_json_schema(
+            "application/json": AuthorizedClientResponse.model_json_schema(
                 ref_template="#/components/schemas/{model}"
             )
         },
@@ -194,12 +208,19 @@ async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
 
     await otp_service.set_code_used(request.otp_context)
     user = await user_service.get_or_create(request.otp_context.destination)
+    client = await business_service.get_or_create_client(
+        request.otp_context.business, user
+    )
+
     access, refresh = await tokens_service.create_tokens(
         user.id,
         request=request,
         realm=request.otp_context.realm,
         business_code=request.otp_context.business,
     )
-    return TokenPair(
-        access_token=encode_token(access), refresh_token=encode_token(refresh)
+    return AuthorizedClientResponse(
+        client=client,
+        tokens=TokenPair(
+            access_token=encode_token(access), refresh_token=encode_token(refresh)
+        ),
     )

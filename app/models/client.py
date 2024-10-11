@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
 from sqlalchemy.orm import relationship
 
 from app.base import BaseCachableModelWithIDAndDateTimeFields
+from app.utils import random_code
 
 
 class BusinessClient(BaseCachableModelWithIDAndDateTimeFields):
@@ -19,6 +20,8 @@ class BusinessClient(BaseCachableModelWithIDAndDateTimeFields):
 
     __tablename__ = "clients"
 
+    __cache_key_attr__ = "user_id"
+
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     business_code = Column(String, ForeignKey("business.code"), nullable=False)
     first_name = Column(String, nullable=False)
@@ -26,13 +29,26 @@ class BusinessClient(BaseCachableModelWithIDAndDateTimeFields):
     picture = Column(String)
     bonuses = Column(Float, default=0.0)
     is_staff = Column(Boolean, default=False)
+    qr_code = Column(String, nullable=True, default=lambda: str(random_code(10)))
 
     business = relationship(
         "Business", back_populates="clients", uselist=False
     )  # client can have one business
+    user = relationship("User", back_populates="clients", uselist=False)
+
+    @property
+    def phone(self):
+        return self.user.phone
+
+    @property
+    def business_name(self):
+        return self.business.name
+
+    def get_key(self) -> str:
+        return f"{self.__tablename__}:{self.user_id}:{self.business_code}"
 
     def __repr__(self):
         return (
             f"<BusinessClient(business_code='{self.business_code}', "
-            f"user_id='{self.user_id}'), bonuses={self.bonuses}, is_staff={self.is_staff}>"
+            f"user_id='{self.user_id}', bonuses={self.bonuses}, is_staff={self.is_staff}>"
         )

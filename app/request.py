@@ -42,6 +42,7 @@ class ApiRequest(Request):
         self._jwt_payload: Union[Dict[str, Union[str, int, bool]], None] = None
         self._access_token: Union[AccessToken, None] = None
         self._user: Union[User, None] = None
+        self._client: Union[BusinessClient, None] = None
 
     async def get_access_token(self) -> Union[AccessToken, None]:
         """
@@ -94,6 +95,16 @@ class ApiRequest(Request):
         if self.business_code is None:
             return None
         return await self.business_getter(self.business_code, use_cache=True)
+
+    async def get_client(self) -> Union[BusinessClient, None]:
+        if self._client is None:
+            business_code = self.business_code
+            user_id = (await self.get_user()).id
+            if business_code and user_id:
+                self._client = await self.client_getter(
+                    business_code, user_id, use_cache=True
+                )
+        return self._client
 
     def set_otp_context(self, otp: OTP):
         """

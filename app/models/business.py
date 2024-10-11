@@ -24,7 +24,7 @@ class Business(BaseCachableModel):
     picture = Column(String(255), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    owner = relationship("User", back_populates="businesses")
+    owner = relationship("User", back_populates="businesses", uselist=False)
     clients = relationship(
         "BusinessClient", back_populates="business"
     )  # business can have a lot of clients

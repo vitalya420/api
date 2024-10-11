@@ -31,6 +31,7 @@ class User(BaseCachableModelWithID):
     is_admin = Column(Boolean, default=False)
 
     businesses = relationship("Business", back_populates="owner")
+    clients = relationship("BusinessClient", back_populates="user")
 
     def check_password(self, plain_password: str) -> bool:
         """
@@ -56,6 +57,9 @@ class User(BaseCachableModelWithID):
         self.password = bcrypt.hashpw(
             plain_password.encode("utf-8"), bcrypt.gensalt()
         ).decode("utf-8")
+
+    def __eq__(self, other):
+        return self.id == other.id
 
     def __repr__(self):
         return f"<User(id={self.id}, phone='{self.phone}', is_admin='{self.is_admin}')>"

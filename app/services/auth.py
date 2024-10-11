@@ -93,6 +93,28 @@ class AuthorizationService(BaseService):
         return code
 
     async def business_admin_login(self, phone: str, password: str):
+        """
+        Authenticate a business admin user using their phone number and password.
+
+        This method retrieves the user associated with the provided phone number,
+        checks if the user exists and has businesses, verifies the password, and
+        generates authentication tokens if the login is successful.
+
+        Args:
+            phone (str): The phone number of the user attempting to log in,
+                         formatted in international format (e.g., +1234567890).
+            password (str): The password provided by the user for authentication.
+
+        Returns:
+            Tuple[User, str, str]: A tuple containing the authenticated User instance
+                                    and the generated access and refresh tokens.
+
+        Raises:
+            UserDoesNotExist: If no user is found with the provided phone number.
+            UserHasNoBusinesses: If the user does not have any businesses to manage.
+            YouAreRetardedError: If the user is registered without a password.
+            WrongPassword: If the provided password does not match the user's password.
+        """
         async with self.get_session() as session:
             user = await user_service.with_context({"session": session}).get_user(
                 phone=phone, use_cache=False

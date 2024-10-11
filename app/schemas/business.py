@@ -3,6 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel, field_validator
 from sanic_ext.extensions.openapi import openapi
 
+from app.schemas.tokens import TokenPair
+from app.schemas.pagination import PaginationQuery
 from app.schemas.response import SuccessResponse
 from app.utils import normalize_phone_number
 
@@ -48,3 +50,32 @@ class BusinessCreationResponse(SuccessResponse):
 
     class Config:
         from_attributes = True
+
+
+@openapi.component
+class BusinessClientResponse(BaseModel):
+    first_name: str
+    last_name: Optional[str] = ""
+    business_code: str
+    qr_code: Optional[str] = None
+    bonuses: float
+    phone: str
+    is_staff: bool
+
+    class Config:
+        from_attributes = True
+
+
+@openapi.component
+class BusinessClientsPaginatedResponse(PaginationQuery):
+    total: int
+    clients: List[BusinessClientResponse]
+
+    class Config:
+        from_attributes = True
+
+
+@openapi.component
+class AuthorizedClientResponse(BaseModel):
+    client: BusinessClientResponse
+    tokens: TokenPair

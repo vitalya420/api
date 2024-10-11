@@ -10,10 +10,6 @@ from app.base import BaseService
 from app.services import tokens_service, user_service, business_service
 
 
-async def stub():
-    pass
-
-
 def create_request_class() -> Type[ApiRequest]:
     """
     Create and configure the ApiRequest class with necessary getters.
@@ -40,7 +36,7 @@ def create_request_class() -> Type[ApiRequest]:
         token_getter=tokens_service.get_access_token,
         user_getter=user_service.get_user,
         business_getter=business_service.get_business,
-        client_getter=stub,
+        client_getter=business_service.get_client,
     )
 
 

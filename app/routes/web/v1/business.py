@@ -1,10 +1,9 @@
-from http import HTTPStatus
 from textwrap import dedent
 
-from sanic import Blueprint, json, BadRequest, NotFound
+from sanic import Blueprint, BadRequest, NotFound, Forbidden
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
-from sanic_ext.extensions.openapi.definitions import Response
+from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
 from app.decorators import rules, login_required, admin_access, pydantic_response
 from app.exceptions import YouAreRetardedError
@@ -14,7 +13,9 @@ from app.schemas.business import (
     BusinessesResponse,
     BusinessResponse,
     BusinessCreationResponse,
+    BusinessClientsPaginatedResponse,
 )
+from app.schemas.pagination import PaginationQuery
 from app.services import business_service, user_service
 
 business = Blueprint("web-business", url_prefix="/business")
@@ -146,3 +147,66 @@ async def create_business(request: ApiRequest, body: BusinessCreate):
     return BusinessCreationResponse(
         message=f"Business {instance.name} created successfully!", business=instance
     )
+
+
+@business.get("/<code>")
+@openapi.definition(
+    description=dedent(
+        """
+        ## Get business details by it's code
+
+        #### Example response
+
+        ```json
+        {
+          "code": "HRWKGEHCQUTA",
+          "name": "Coffee Shop",
+          "picture": "<url to image>",
+          "owner_id": 1
+        }
+        ```
+        """
+    ),
+    response={
+        "application/json": BusinessResponse.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        ),
+    },
+    secured={"token": []},
+)
+@rules(login_required)
+@pydantic_response
+async def get_business_by_code(request: ApiRequest, code: str):
+    if (that_business := await business_service.get_business(code)) is None:
+        raise BadRequest(f"Business {code} not found")
+    if that_business.owner != await request.get_user():
+        raise Forbidden("Not your business")
+    return BusinessResponse.model_validate(that_business)
+
+
+@business.get("/<code>/clients")
+@openapi.definition(
+    description=dedent(
+        """
+        ## Get business clients
+
+        #### Example response
+
+        """
+    ),
+    parameter=[Parameter("page", int, "query"), Parameter("per_page", int, "query")],
+    response={
+        "application/json": BusinessClientsPaginatedResponse.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        ),
+    },
+    secured={"token": []},
+)
+@rules(login_required)
+@validate(query=PaginationQuery)
+@pydantic_response
+async def get_business_clients(request: ApiRequest, code: str):
+    that_business = await business_service.get_business(code)
+    if that_business.owner != await request.get_user():
+        raise Forbidden("Not your business")
+    clients = await business_service.get_clients(that_business)
