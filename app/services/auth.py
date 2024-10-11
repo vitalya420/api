@@ -73,24 +73,23 @@ class AuthorizationService(BaseService):
         now = datetime.utcnow()  # noqa
 
         async with self.get_session() as session:
-            async with session.begin():
-                otp_service_ = otp_service.with_context({"session": session})
-                if existing_otps := await otp_service_.get_otps(
-                    phone, business, now - sms_cooldown
-                ):
-                    raise SMSCooldown("Too many SMS")
-                limit_result = await otp_service_.get_otps(
-                    phone, business, now - sms_limit_time
-                )
-                if len(limit_result) >= sms_limit:
-                    raise SMSCooldown("Too many SMS")
-                if revoke_old:
-                    await otp_service_.revoke_otps(phone, business)
-                code = random_code()
-                await otp_service_.create(
-                    phone, realm, business, code, now, now + code_lifetime
-                )
-                await send_sms_to_phone(phone, code)
+            otp_service_ = otp_service.with_context({"session": session})
+            if existing_otps := await otp_service_.get_otps(
+                phone, business, now - sms_cooldown
+            ):
+                raise SMSCooldown("Too many SMS")
+            limit_result = await otp_service_.get_otps(
+                phone, business, now - sms_limit_time
+            )
+            if len(limit_result) >= sms_limit:
+                raise SMSCooldown("Too many SMS")
+            if revoke_old:
+                await otp_service_.revoke_otps(phone, business)
+            code = random_code()
+            await otp_service_.create(
+                phone, realm, business, code, now, now + code_lifetime
+            )
+            await send_sms_to_phone(phone, code)
         return code
 
     async def business_admin_login(self, phone: str, password: str):

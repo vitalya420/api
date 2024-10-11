@@ -75,16 +75,8 @@ class SessionManagementMixin(ABC):
             yield running_session
         else:
             async with self.session_factory() as session:
-                try:
-                    self._running_session = session
+                async with session.begin():
                     yield session
-                except Exception as e:
-                    await session.rollback()
-                    raise
-                else:
-                    await session.commit()
-                finally:
-                    await session.close()
 
     def with_context(self, context: Dict[Any, Any]) -> Self:
         """

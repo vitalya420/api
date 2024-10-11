@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 from sqlalchemy.exc import IntegrityError
@@ -7,6 +8,7 @@ from app.db import async_session_factory
 from app.exceptions import UnableToCreateBusiness
 from app.models import Business, User
 from app.repositories import BusinessRepository
+from app.services import user_service
 from app.utils import force_id
 
 
@@ -17,6 +19,16 @@ class BusinessService(BaseService):
         try:
             async with self.get_repo() as business_repo:
                 instance = await business_repo.create_business(name, owner)
+
+                # User just got updated, he has a new business now,
+                # So we need to update in cache
+                # Let's just delete him from cache, and updated user
+                # will be cached again on his next request
+                coro = self.cache_delete_object(
+                    await user_service.get_user(force_id(owner), use_cache=False)
+                )
+                asyncio.create_task(coro)
+
             return instance
         except IntegrityError:
             raise UnableToCreateBusiness(

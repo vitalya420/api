@@ -50,7 +50,7 @@ class UserRepository(BaseRepository):
 
         if (is_business_user := not not password) and not business_name:
             raise YouAreRetardedError(
-                "Business users have passwords but you did not provided business name to create"
+                "Business users have password but you did not provided business name to create"
             )
 
         if is_business_user:
