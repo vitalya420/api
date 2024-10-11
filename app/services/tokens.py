@@ -72,6 +72,7 @@ class TokenService(BaseService):
     async def revoke_access_token(self, access_token: AccessToken):
         async with self.get_repo() as tokens_repo:
             await tokens_repo.revoke_token(AccessToken, access_token.jti)
+            await tokens_repo.revoke_token(RefreshToken, access_token.refresh_token_jti)
             await asyncio.gather(
                 self.cache_delete_object(access_token),
                 self.cache_delete_object(access_token.refresh_token),

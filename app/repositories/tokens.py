@@ -15,12 +15,12 @@ T = TypeVar("T", AccessToken, RefreshToken)
 
 class TokensRepository(BaseRepository):
     async def create_tokens(
-        self,
-        user_id: int,
-        realm: Realm,
-        business_code: Optional[str] = None,
-        ip_address: Optional[str] = "<no ip>",
-        user_agent: Optional[str] = "<no user agent>",
+            self,
+            user_id: int,
+            realm: Realm,
+            business_code: Optional[str] = None,
+            ip_address: Optional[str] = "<no ip>",
+            user_agent: Optional[str] = "<no user agent>",
     ) -> Tuple[AccessToken, RefreshToken]:
         refresh_token = RefreshToken(
             user_id=user_id,
@@ -58,8 +58,6 @@ class TokensRepository(BaseRepository):
     async def revoke_token(self, class_: Type[T], jti: str):
         if (token := await self.get_token(class_, jti)) is not None:
             token.revoked = True
-            attr = "refresh_token" if class_ is AccessToken else "access_token"
-            getattr(token, attr).revoked = True
 
     async def get_tokens(self, user_id: int, realm: Realm, business_code: str):
         and_clause = and_(
@@ -79,7 +77,7 @@ class TokensRepository(BaseRepository):
         return result.scalars().all()
 
     async def refresh_revoke(
-        self, refresh_jti: str
+            self, refresh_jti: str
     ) -> Tuple[AccessToken, RefreshToken]:
         refresh_token = await self.get_token(RefreshToken, refresh_jti)
         if refresh_token is None:
