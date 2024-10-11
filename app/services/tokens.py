@@ -9,7 +9,7 @@ from app.models import AccessToken, Business, RefreshToken
 from app.repositories.tokens import TokensRepository
 from app.schemas.user import User
 from app.enums import Realm
-from app.utils import force_id, force_business_code
+from app.utils import force_id, force_code
 
 
 class TokenService(BaseService):
@@ -48,7 +48,7 @@ class TokenService(BaseService):
             return await token_repo.get_tokens(
                 force_id(user),
                 realm,
-                force_business_code(business) if business is not None else None,
+                force_code(business) if business is not None else None,
             )
 
     async def refresh_tokens(

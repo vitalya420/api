@@ -51,7 +51,7 @@ class SessionManagementMixin(ABC):
             Union[AsyncSession, None]: The currently running session if found,
                                         or None if no session is available.
         """
-        return self._running_session
+        return self._running_session or self.context.get("session")
 
     @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:

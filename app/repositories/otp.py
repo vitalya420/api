@@ -38,6 +38,7 @@ class OTPRepository(BaseRepository):
             expires_at=expiration,
         )
         self.session.add(instance)
+        await self.session.flush()
         return instance
 
     async def revoke_otps(self, phone: str, business_code: str) -> int:

@@ -78,16 +78,13 @@ class AuthorizationService(BaseService):
                 phone, business, now - sms_cooldown
             ):
                 raise SMSCooldown("Too many SMS")
-
             limit_result = await otp_service_.get_otps(
                 phone, business, now - sms_limit_time
             )
             if len(limit_result) >= sms_limit:
                 raise SMSCooldown("Too many SMS")
-
             if revoke_old:
                 await otp_service_.revoke_otps(phone, business)
-
             code = random_code()
             await otp_service_.create(
                 phone, realm, business, code, now, now + code_lifetime

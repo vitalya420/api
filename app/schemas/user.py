@@ -6,7 +6,7 @@ from sanic_ext.extensions.openapi import openapi
 
 from app.schemas.business import BusinessResponse
 from app.enums import Realm
-from app.schemas.common import HasPhone
+from .common import HasPhone
 
 
 @openapi.component

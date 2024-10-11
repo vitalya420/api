@@ -1,10 +1,9 @@
-from typing import Dict, Union
+from typing import Dict, Union, Callable, Awaitable, Type, Self
 
 from sanic import Request
 
-from app.models import AccessToken, User, OTP, Business
 from app.enums import Realm
-from app.services import tokens_service, user_service, business_service
+from app.models import AccessToken, User, OTP, Business, BusinessClient
 from app.utils.tokens import decode_token
 
 
@@ -22,6 +21,11 @@ class ApiRequest(Request):
         _access_token (Union[AccessToken, None]): The access token associated with the request.
         _user (Union[User, None]): The user associated with the access token.
     """
+
+    token_getter: Callable[..., Awaitable[Union[AccessToken, None]]] = ...
+    user_getter: Callable[..., Awaitable[Union[User, None]]] = ...
+    business_getter: Callable[..., Awaitable[Union[Business, None]]] = ...
+    client_getter: Callable[..., Awaitable[Union[BusinessClient, None]]] = ...
 
     def __init__(self, *sanic_args, **sanic_kwargs):
         """
@@ -54,7 +58,7 @@ class ApiRequest(Request):
             and self.jwt_payload is not None
             and self.jwt_payload.get("type", "") == "access"
         ):
-            self._access_token = await tokens_service.get_access_token(
+            self._access_token = await self.token_getter(
                 self.jwt_payload["jti"], use_cache=True
             )
         return self._access_token
@@ -72,7 +76,7 @@ class ApiRequest(Request):
         if self._user is None:
             access_token = await self.get_access_token()
             if access_token:
-                self._user = await user_service.get_user(
+                self._user = await self.user_getter(
                     pk=access_token.user_id, use_cache=True
                 )
         return self._user
@@ -89,7 +93,7 @@ class ApiRequest(Request):
         """
         if self.business_code is None:
             return None
-        return await business_service.get_business(self.business_code, use_cache=True)
+        return await self.business_getter(self.business_code, use_cache=True)
 
     def set_otp_context(self, otp: OTP):
         """
@@ -142,3 +146,49 @@ class ApiRequest(Request):
         """
         if self.jwt_payload and self.jwt_payload.get("realm"):
             return Realm(self.jwt_payload["realm"])
+
+    @classmethod
+    def set_getters(
+        cls,
+        token_getter: Callable[..., Awaitable[Union[AccessToken, None]]],
+        user_getter: Callable[..., Awaitable[Union[User, None]]],
+        business_getter: Callable[..., Awaitable[Union[Business, None]]],
+        client_getter: Callable[..., Awaitable[Union[BusinessClient, None]]],
+    ) -> Type[Self]:
+        """
+        Set the getter functions for retrieving access tokens, user information,
+        business information, and client information for the ApiRequest class.
+
+        This method allows the ApiRequest class to be configured with specific
+        functions that will be used to fetch the necessary data when requested.
+        This is particularly useful for avoiding circular imports in services that
+        require access to the request class.
+
+        Args:
+            token_getter (Callable[..., Awaitable[Union[AccessToken, None]]]):
+                A callable that retrieves the access token associated with the request.
+            user_getter (Callable[..., Awaitable[Union[User, None]]]):
+                A callable that retrieves the user associated with the access token.
+            business_getter (Callable[..., Awaitable[Union[Business, None]]]):
+                A callable that retrieves the business associated with the request.
+            client_getter (Callable[..., Awaitable[Union[BusinessClient, None]]]):
+                A callable that retrieves the client associated with the request.
+
+        Returns:
+            Type[Self]: The ApiRequest class with the specified getter functions set.
+
+        Example:
+            ApiRequest = create_request_class()
+            ApiRequest.set_getters(
+                 token_getter=my_token_getter,
+                 user_getter=my_user_getter,
+                 business_getter=my_business_getter,
+                 client_getter=my_client_getter
+            )
+        """
+        class_ = cls
+        class_.token_getter = token_getter
+        class_.user_getter = user_getter
+        class_.business_getter = business_getter
+        class_.client_getter = client_getter
+        return class_

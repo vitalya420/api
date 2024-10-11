@@ -6,13 +6,15 @@ from app.base import BaseCachableModelWithIDAndDateTimeFields
 
 class BusinessClient(BaseCachableModelWithIDAndDateTimeFields):
     """
-    Represents a business entity.
+    Represents a client associated with a business.
 
     Attributes:
-        code (str): The unique code of the business.
-        name (str): The name of the business.
-        picture (str): The URL of the business's picture (optional).
-        owner_id (int): The ID of the user who owns the business.
+        user_id (int): The ID of the user associated with the client.
+        business_code (str): The code of the business the client is associated with.
+        first_name (str): The first name of the client.
+        last_name (str): The last name of the client (optional).
+        picture (str): The URL of the client's picture (optional).
+        bonuses (float): The bonuses associated with the client (default is 0.0).
     """
 
     __tablename__ = "clients"

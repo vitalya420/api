@@ -43,12 +43,12 @@ def admin_access(f):
 def otp_context_required(f):
     @wraps(f)
     async def decorated(request: ApiRequest, body: AuthConfirmRequest, *args, **kwargs):
-        if not (phone := body.phone_normalize()):
+        if not body.phone:
             raise BadRequest("Invalid phone number")
-        otp_code = await otp_service.get_unexpired_otp(phone, body.business)
+        otp_code = await otp_service.get_unexpired_otp(body.phone, body.business)
         if otp_code is None:
             raise BadRequest("OTP code is expired")
-        if otp_code.destination != phone:
+        if otp_code.destination != body.phone:
             raise BadRequest("Bruh, wtf")  # this should never happen
         request.set_otp_context(otp_code)
         return await f(request, body, *args, **kwargs)

@@ -1,9 +1,9 @@
-from pydantic import BaseModel, field_validator
+from pydantic import field_validator
 
 from app.utils import normalize_phone_number
 
 
-class HasPhone(BaseModel):
+class HasPhone:
     phone: str
 
     @field_validator("phone")

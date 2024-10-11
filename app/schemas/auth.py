@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sanic_ext.extensions.openapi import openapi
 
 from app.enums import Realm
-from app.schemas.user import _HasPhone
+from .common import HasPhone
 
 
 @openapi.component
@@ -16,7 +16,7 @@ class AuthRequest(BaseModel):
 
 
 @openapi.component
-class AuthConfirmRequest(BaseModel, _HasPhone):
+class AuthConfirmRequest(BaseModel, HasPhone):
     phone: str
     otp: str
     business: str

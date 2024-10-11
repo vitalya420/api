@@ -7,15 +7,13 @@ from app.utils import random_string_code
 
 class Business(BaseCachableModel):
     """
-    Represents a client associated with a business.
+    Represents a business entity.
 
     Attributes:
-        user_id (int): The ID of the user associated with the client.
-        business_code (str): The code of the business the client is associated with.
-        first_name (str): The first name of the client.
-        last_name (str): The last name of the client (optional).
-        picture (str): The URL of the client's picture (optional).
-        bonuses (float): The bonuses associated with the client (default is 0.0).
+        code (str): The unique code of the business.
+        name (str): The name of the business.
+        picture (str): The URL of the business's picture (optional).
+        owner_id (int): The ID of the user who owns the business.
     """
 
     __tablename__ = "business"

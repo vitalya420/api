@@ -29,7 +29,7 @@ def encode_token(token: Union[AccessToken, RefreshToken]):
 def decode_token(token: str, *, raise_exception: bool = True):
     try:
         payload = jwt.decode(token, config["SECRET_KEY"], algorithms=["HS256"])
-        now = datetime.utcnow() # noqa
+        now = datetime.utcnow()  # noqa
 
         expires_at = payload["expires_at"]
         if expires_at < now.timestamp():
