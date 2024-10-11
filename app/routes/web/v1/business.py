@@ -1,8 +1,10 @@
+from http import HTTPStatus
 from textwrap import dedent
 
 from sanic import Blueprint, json, BadRequest, NotFound
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import rules, login_required, admin_access, pydantic_response
 from app.exceptions import YouAreRetardedError
@@ -65,6 +67,38 @@ async def get_business(request: ApiRequest):
         
         One of these arguments required: `owner_id` or `owner_phone`.
         
+        #### Example request
+        
+        ```json
+        {
+          "name": "Coffe Shop",
+          "owner_id": 123
+        }
+        ```
+        
+        or
+        
+        ```json
+        {
+          "name": "Coffe Shop",
+          "owner_phone": "+15551234567"
+        }
+        ```
+        
+        #### Example response
+        
+        ```json
+        {
+          "success": true,
+          "message": "Business Coffe Shop created successfully!",
+          "business": {
+            "code": "NCFNSCBFYSQU",
+            "name": "Coffe Shop",
+            "picture": null,
+            "owner_id": 123
+          }
+        }
+        ```
         """
     ),
     body={
@@ -72,6 +106,15 @@ async def get_business(request: ApiRequest):
             ref_template="#/components/schemas/{model}"
         )
     },
+    response=[
+        Response(
+            {
+                "application/json": BusinessCreationResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            }
+        )
+    ],
     secured={"token": []},
 )
 @validate(BusinessCreate)

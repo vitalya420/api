@@ -42,6 +42,7 @@ class BusinessesResponse(BaseModel):
         from_attributes = True
 
 
+@openapi.component
 class BusinessCreationResponse(SuccessResponse):
     business: BusinessResponse
 
