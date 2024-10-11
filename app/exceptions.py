@@ -1,4 +1,4 @@
-from sanic import ServiceUnavailable, BadRequest
+from sanic import ServiceUnavailable, BadRequest, NotFound
 
 
 class EndpointDoNothing(BadRequest):
@@ -21,19 +21,19 @@ class UserExists(Exception):
     pass
 
 
-class UserDoesNotExist(Exception):
+class UserDoesNotExist(BadRequest):
     pass
 
 
-class WrongPassword(Exception):
+class WrongPassword(BadRequest):
     pass
 
 
-class UserHasNoBusinesses(Exception):
+class UserHasNoBusinesses(BadRequest):
     pass
 
 
-class BusinessDoesNotExist(Exception):
+class BusinessDoesNotExist(NotFound):
     pass
 
 
@@ -49,5 +49,5 @@ class RefreshTokenNotFound(BadRequest):
     pass
 
 
-class YouAreRetardedError(Exception):
+class YouAreRetardedError(BadRequest):
     pass

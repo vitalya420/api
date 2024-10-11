@@ -1,26 +1,20 @@
 from http import HTTPStatus
 from textwrap import dedent
 
-from sanic import Blueprint, json, BadRequest
-from sanic_ext import validate
+from sanic import Blueprint, json, BadRequest, InternalServerError
+from sanic_ext import validate, serializer
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
-from app.exceptions import (
-    WrongPassword,
-    UserHasNoBusinesses,
-    UserDoesNotExist,
-    YouAreRetardedError,
-)
-from app.request import ApiRequest
-from app.schemas import SuccessResponse
-from app.schemas.auth import AuthRequest, AuthConfirmRequest
 from app.enums import Realm
-from app.schemas.response import AuthResponse
+from app.request import ApiRequest
+from app.schemas.auth import AuthRequest, AuthConfirmRequest
+from app.schemas.response import AuthResponse, UserAuthorizedResponse, OTPSentResponse
+from app.schemas.tokens import TokenPair
 from app.security import otp_context_required
-from app.serializers import serialize_token_pair
-from app.serializers.user import serialize_web_user
+from app.serializers import serialize_token_pair, serialize_pydantic
 from app.services import auth_service, otp_service, user_service, tokens_service
+from app.utils.tokens import encode_token
 
 auth = Blueprint("auth", url_prefix="/auth")
 
@@ -108,15 +102,19 @@ auth = Blueprint("auth", url_prefix="/auth")
     ),
     response=[
         Response(
-            {"application/json": AuthResponse.model_json_schema(
-                ref_template="#/components/schemas/{model}"
-            )},
+            {
+                "application/json": AuthResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
             status=HTTPStatus.OK,
             description="Code sent successfully.",
         )
     ],
+    summary="Authorize user",
 )
 @validate(AuthRequest)
+@serializer(serialize_pydantic)
 async def authorization(request: ApiRequest, body: AuthRequest):
     if not body.password and body.realm == Realm.web:
         raise BadRequest("Authorization in WEB requires password.")
@@ -124,24 +122,20 @@ async def authorization(request: ApiRequest, body: AuthRequest):
         raise BadRequest("Authorization in mobile app requires business code.")
 
     if body.realm == Realm.web:
-        try:
-            user, access, refresh = await auth_service.with_context(
-                {"request": request}
-            ).business_admin_login(body.phone, body.password)
-            return json(serialize_web_user(user, access, refresh))
-        except (
-                WrongPassword,
-                UserHasNoBusinesses,
-                UserDoesNotExist,
-                YouAreRetardedError,
-        ):
-            raise BadRequest("Wrong phone or password.")
-
+        user, access, refresh = await auth_service.with_context(
+            {"request": request}
+        ).business_admin_login(body.phone, body.password)
+        return UserAuthorizedResponse(
+            user=user,
+            tokens=TokenPair(
+                access_token=encode_token(access),
+                refresh_token=encode_token(refresh),
+            ),
+        )
     elif body.realm == Realm.mobile:
         await auth_service.send_otp(body.phone, body.realm, body.business)
-        return json(SuccessResponse(message="OTP sent successfully.").model_dump())
-
-    return json({"ok": True})
+        return OTPSentResponse(message="OTP sent successfully.")
+    raise InternalServerError("Unexpected error.", quiet=True)
 
 
 @auth.post("/confirm")
@@ -151,6 +145,41 @@ async def authorization(request: ApiRequest, body: AuthRequest):
             ref_template="#/components/schemas/{model}"
         )
     },
+    description=dedent(
+        """
+        ## Complete an authorization
+        
+        Complete an authorization using sent one time password and get tokens
+        
+        #### Example request
+        
+        ```json
+        {
+          "phone": "+15551234567",
+          "otp": "000000",
+          "business": "SOMECODE",
+        }
+        ```
+        
+        If code is correct you will receive the following response:
+        
+        ```json
+        {
+          "access_token": "<access token>",
+          "refresh_token": "<refresh token>",
+        }
+        ```
+        """
+    ),
+    response=Response(
+        {
+            "application/json": TokenPair.model_json_schema(
+                ref_template="#/components/schemas/{model}"
+            )
+        },
+        status=HTTPStatus.OK,
+    ),
+    summary="Complete an authorization with OTP",
 )
 @validate(AuthConfirmRequest)
 @otp_context_required
