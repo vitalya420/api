@@ -90,15 +90,15 @@ class UserRepository(BaseRepository):
 
     async def set_user_password(self, phone: str, password: str):
         """
-       Sets a new password for an existing user identified by their phone number.
+        Sets a new password for an existing user identified by their phone number.
 
-       Args:
-           phone (str): The phone number of the user whose password is to be set.
-           password (str): The new password for the user.
+        Args:
+            phone (str): The phone number of the user whose password is to be set.
+            password (str): The new password for the user.
 
-       Raises:
-           UserDoesNotExist: If no user with the specified phone number exists.
-       """
+        Raises:
+            UserDoesNotExist: If no user with the specified phone number exists.
+        """
         user = await self.get_user(phone=phone)
         if not user:
             raise UserDoesNotExist("User with phone does not exist.")
