@@ -2,10 +2,9 @@ from sanic import Blueprint, json
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 
+from app.decorators import rules, login_required, admin_access, pydantic_response
 from app.request import ApiRequest
 from app.schemas.business import BusinessCreate, BusinessesResponse, BusinessResponse
-from app.decorators import rules, login_required, admin_access
-from app.serializers.businesses import serialize_user_businesses
 from app.services import business_service
 
 business = Blueprint("web-business", url_prefix="/business")
@@ -21,9 +20,10 @@ business = Blueprint("web-business", url_prefix="/business")
     },
 )
 @rules(login_required)
+@pydantic_response
 async def get_business(request: ApiRequest):
     businesses = (await request.get_user()).businesses
-    return json(serialize_user_businesses(businesses))
+    return BusinessesResponse(businesses=businesses)
 
 
 @business.post("/")
