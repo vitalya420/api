@@ -189,18 +189,17 @@ async def authorization(request: ApiRequest, body: AuthRequest):
 @otp_context_required
 @pydantic_response
 async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
-    if request.otp_context:
-        if request.otp_context.code == body.otp:
-            await otp_service.set_code_used(request.otp_context)
-            user = await user_service.get_or_create(request.otp_context.destination)
-            access, refresh = await tokens_service.create_tokens(
-                user.id,
-                request=request,
-                realm=request.otp_context.realm,
-                business_code=request.otp_context.business,
-            )
-            return TokenPair(
-                access_token=encode_token(access), refresh_token=encode_token(refresh)
-            )
-        raise BadRequest("Wrong otp code.")
-    raise BadRequest
+    if request.otp_context.code != body.otp:
+        raise BadRequest("Wrong or expired otp code")
+
+    await otp_service.set_code_used(request.otp_context)
+    user = await user_service.get_or_create(request.otp_context.destination)
+    access, refresh = await tokens_service.create_tokens(
+        user.id,
+        request=request,
+        realm=request.otp_context.realm,
+        business_code=request.otp_context.business,
+    )
+    return TokenPair(
+        access_token=encode_token(access), refresh_token=encode_token(refresh)
+    )
