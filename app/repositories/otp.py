@@ -7,7 +7,7 @@ from app.base import BaseRepository
 from .business import BusinessRepository
 from app.exceptions import BusinessDoesNotExist
 from app.models import OTP
-from app.schemas.enums import Realm
+from app.enums import Realm
 
 
 class OTPRepository(BaseRepository):

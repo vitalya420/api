@@ -8,7 +8,7 @@ from sqlalchemy.sql.operators import eq
 from app.base import BaseRepository
 from app.exceptions import BusinessCodeNotProvided, RefreshTokenNotFound
 from app.models import AccessToken, RefreshToken
-from app.schemas.enums import Realm
+from app.enums import Realm
 
 T = TypeVar("T", AccessToken, RefreshToken)
 

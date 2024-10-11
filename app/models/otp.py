@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum
 
-from app.schemas.enums import Realm
+from app.enums import Realm
 from app.base import BaseCachableModelWithID
 
 
@@ -39,6 +39,6 @@ class OTP(BaseCachableModelWithID):
     revoked = Column(Boolean, default=False)
 
     def __repr__(self):
-        now = datetime.utcnow()
+        now = datetime.utcnow()  # noqa
         expired = self.expires_at < now
         return f"<OTP(id={self.id}, destination='{self.destination}', code='{self.code}', expired={expired})>"

@@ -2,7 +2,7 @@ from sanic import Blueprint, Unauthorized, Forbidden
 
 from .v1 import mobile_api_v1
 from app.request import ApiRequest
-from app.schemas.user import Realm
+from app.enums import Realm
 
 mobile_api = Blueprint.group(mobile_api_v1, url_prefix="/mobile")
 

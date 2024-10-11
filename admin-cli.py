@@ -3,7 +3,7 @@ import time
 
 from app.base import BaseService
 from app.redis import connect
-from app.schemas.enums import Realm
+from app.enums import Realm
 from app.services import user_service, tokens_service, business_service
 
 

@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Union, Callable, Type, Awaitable, Sequence
+from typing import Union, Callable, Type, Awaitable, List
 
 from redis.asyncio import Redis
 
@@ -190,12 +190,40 @@ class RedisCacheMixin(ABC):
     async def get_instance_from_cache_by_key(
         cls, key: Union[str, bytes], class_: Type[CacheableMixin]
     ) -> Union[CacheableMixin, None]:
+        """
+        Retrieve an instance from the cache using the specified key.
+
+        This method attempts to get a cached instance associated with the provided key.
+        If a cached instance is found, it is deserialized from bytes into an instance of
+        the specified class.
+
+        Args:
+            cls: The class method context.
+            key (Union[str, bytes]): The cache key used to look up the instance.
+            class_ (Type[CacheableMixin]): The class type of the cacheable object.
+
+        Returns:
+            Union[CacheableMixin, None]: The deserialized instance if found, or None if not found.
+        """
         cached = await cls.cache_get(key)
         if cached:
             return class_.from_bytes(cached)
 
     @classmethod
-    async def search_main_key(cls, reference_keys: Sequence[str]) -> Union[bytes, None]:
+    async def search_main_key(cls, reference_keys: List[str]) -> Union[bytes, None]:
+        """
+        Search for the main key in the cache using a list of reference keys.
+
+        This method iterates through the provided reference keys and attempts to retrieve
+        a cached instance. The first cached instance found is returned.
+
+        Args:
+            cls: The class method context.
+            reference_keys (List[str]): A list of reference keys to search in the cache.
+
+        Returns:
+            Union[bytes, None]: The cached value if found, or None if not found.
+        """
         for reference_key in reference_keys:
             cached = await cls.cache_get(reference_key)
             if cached:
@@ -203,6 +231,17 @@ class RedisCacheMixin(ABC):
 
     @classmethod
     async def cache_instance(cls, instance: CacheableMixin, ex=60 * 60):
+        """
+        Cache an instance and its reference keys.
+
+        This method stores the provided instance in the cache using its main key.
+        It also caches any reference keys associated with the instance.
+
+        Args:
+            cls: The class method context.
+            instance (CacheableMixin): The instance to be cached.
+            ex (int, optional): The expiration time for the cache in seconds. Defaults to 3600 seconds (1 hour).
+        """
         main_key = instance.get_key()
         await cls.cache_set(main_key, bytes(instance), ex=ex)
         ref_keys = instance.get_reference_keys()

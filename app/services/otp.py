@@ -5,7 +5,7 @@ from app.db import async_session_factory
 from app.models import OTP
 from app.repositories.otp import OTPRepository
 from app.base import BaseService
-from ..schemas.enums import Realm
+from app.enums import Realm
 
 
 class OTPService(BaseService):

@@ -104,7 +104,22 @@ class SessionManagementMixin(ABC):
             session_factory=self.session_factory, context={**self.context, **context}
         )
 
-    def reuse_session(self):
+    def reuse_session(self) -> Self:
+        """
+        Reuse the current running database session within a new context.
+
+        This method checks if there is an active database session. If a session is
+        running, it creates a new instance of the mixin with the current context
+        and includes the running session in the context. If there is no active
+        session, it raises a RuntimeError.
+
+        Returns:
+            Self: A new instance of the mixin with the updated context that includes
+                  the current running session.
+
+        Raises:
+            RuntimeError: If there is no running database session.
+        """
         if self._running_session is None:
             raise RuntimeError("No running database session")
         return self.with_context({**self.context, "session": self._running_session})

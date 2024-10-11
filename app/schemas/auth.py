@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 from sanic_ext.extensions.openapi import openapi
 
-from app.schemas.enums import Realm
+from app.enums import Realm
 from app.schemas.user import _HasPhone
 
 

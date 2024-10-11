@@ -14,7 +14,7 @@ from app.utils.rand import random_code
 from .tokens import tokens_service
 from .user import user_service
 from app.base import BaseService
-from app.schemas.enums import Realm
+from app.enums import Realm
 
 
 class AuthorizationService(BaseService):

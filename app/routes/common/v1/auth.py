@@ -11,7 +11,7 @@ from app.exceptions import (
 from app.request import ApiRequest
 from app.schemas import SuccessResponse
 from app.schemas.auth import AuthRequest, AuthConfirmRequest
-from app.schemas.enums import Realm
+from app.enums import Realm
 from app.security import otp_context_required
 from app.serializers import serialize_token_pair
 from app.serializers.user import serialize_web_user
