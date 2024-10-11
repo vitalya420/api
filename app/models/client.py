@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, String, Float
+from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean
 from sqlalchemy.orm import relationship
 
 from app.base import BaseCachableModelWithIDAndDateTimeFields
@@ -25,7 +25,14 @@ class BusinessClient(BaseCachableModelWithIDAndDateTimeFields):
     last_name = Column(String)
     picture = Column(String)
     bonuses = Column(Float, default=0.0)
+    is_staff = Column(Boolean, default=False)
 
     business = relationship(
         "Business", back_populates="clients", uselist=False
     )  # client can have one business
+
+    def __repr__(self):
+        return (
+            f"<BusinessClient(business_code='{self.business_code}', "
+            f"user_id='{self.user_id}'), bonuses={self.bonuses}, is_staff={self.is_staff}>"
+        )

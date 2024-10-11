@@ -1,27 +1,48 @@
 from datetime import datetime
 from typing import Optional, Tuple, TypeVar, Type
 
-from sqlalchemy import select, and_, update
+from sqlalchemy import select, and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.operators import eq
 
 from app.base import BaseRepository
+from app.enums import Realm
 from app.exceptions import BusinessCodeNotProvided, RefreshTokenNotFound
 from app.models import AccessToken, RefreshToken
-from app.enums import Realm
 
 T = TypeVar("T", AccessToken, RefreshToken)
 
 
 class TokensRepository(BaseRepository):
+    """
+    Repository for managing access and refresh tokens in the database.
+
+    This class provides methods to create, retrieve, revoke, and manage tokens
+    associated with users in a specific realm. It interacts with the database
+    using SQLAlchemy ORM.
+    """
+
     async def create_tokens(
-            self,
-            user_id: int,
-            realm: Realm,
-            business_code: Optional[str] = None,
-            ip_address: Optional[str] = "<no ip>",
-            user_agent: Optional[str] = "<no user agent>",
+        self,
+        user_id: int,
+        realm: Realm,
+        business_code: Optional[str] = None,
+        ip_address: Optional[str] = "<no ip>",
+        user_agent: Optional[str] = "<no user agent>",
     ) -> Tuple[AccessToken, RefreshToken]:
+        """
+        Creates and stores a new access token and refresh token for a user.
+
+        Args:
+            user_id (int): The ID of the user for whom the tokens are being created.
+            realm (Realm): The realm in which the tokens are valid.
+            business_code (Optional[str]): An optional business code associated with the tokens.
+            ip_address (Optional[str]): The IP address of the user (default is "<no ip>").
+            user_agent (Optional[str]): The user agent string of the user's device (default is "<no user agent>").
+
+        Returns:
+            Tuple[AccessToken, RefreshToken]: The created access token and refresh token.
+        """
         refresh_token = RefreshToken(
             user_id=user_id,
             realm=realm,
@@ -43,6 +64,17 @@ class TokensRepository(BaseRepository):
         return access_token, refresh_token
 
     async def get_token(self, class_: Type[T], jti: str, alive_only: bool = True) -> T:
+        """
+        Retrieves a token (either AccessToken or RefreshToken) by its JTI (JWT ID).
+
+        Args:
+            class_ (Type[T]): The class type of the token to retrieve (AccessToken or RefreshToken).
+            jti (str): The JWT ID of the token to retrieve.
+            alive_only (bool): If True, only retrieves tokens that are not revoked and are still valid (default is True).
+
+        Returns:
+            T: The retrieved token, or None if not found.
+        """
         query = select(class_).where(class_.jti == jti)  # noqa
         if alive_only:
             query = query.where(
@@ -56,10 +88,31 @@ class TokensRepository(BaseRepository):
         return res.scalars().first()
 
     async def revoke_token(self, class_: Type[T], jti: str):
+        """
+        Revokes a token (either AccessToken or RefreshToken) by its JTI.
+
+        Args:
+            class_ (Type[T]): The class type of the token to revoke (AccessToken or RefreshToken).
+            jti (str): The JWT ID of the token to revoke.
+        """
         if (token := await self.get_token(class_, jti)) is not None:
             token.revoked = True
 
     async def get_tokens(self, user_id: int, realm: Realm, business_code: str):
+        """
+        Retrieves all access tokens for a specific user in a given realm and business code.
+
+        Args:
+            user_id (int): The ID of the user whose tokens are being retrieved.
+            realm (Realm): The realm in which the tokens are valid.
+            business_code (str): The business code associated with the tokens.
+
+        Returns:
+            List[AccessToken]: A list of access tokens associated with the user.
+
+        Raises:
+            BusinessCodeNotProvided: If the realm is mobile and no business code is provided.
+        """
         and_clause = and_(
             AccessToken.user_id == user_id,
             AccessToken.realm == realm,
@@ -77,8 +130,20 @@ class TokensRepository(BaseRepository):
         return result.scalars().all()
 
     async def refresh_revoke(
-            self, refresh_jti: str
+        self, refresh_jti: str
     ) -> Tuple[AccessToken, RefreshToken]:
+        """
+        Revokes a refresh token and its associated access token by the refresh token's JTI.
+
+        Args:
+            refresh_jti (str): The JWT ID of the refresh token to revoke.
+
+        Returns:
+            Tuple[AccessToken, RefreshToken]: The revoked access token and refresh token.
+
+        Raises:
+            RefreshTokenNotFound: If the refresh token with the specified JTI is not found.
+        """
         refresh_token = await self.get_token(RefreshToken, refresh_jti)
         if refresh_token is None:
             raise RefreshTokenNotFound(
