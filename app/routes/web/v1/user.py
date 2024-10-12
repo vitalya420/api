@@ -1,12 +1,12 @@
 from textwrap import dedent
 
-from sanic import Blueprint
+from sanic import Blueprint, BadRequest
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import pydantic_response, login_required
 from app.request import ApiRequest
-from app.schemas.user import WebUserResponse
+from app.schemas.new import WebUserResponse, UserResponse
 
 user = Blueprint("web-user", url_prefix="/user")
 
@@ -42,4 +42,6 @@ user = Blueprint("web-user", url_prefix="/user")
 @pydantic_response
 async def get_user(request: ApiRequest):
     logged_user = await request.get_user()
-    return WebUserResponse.model_validate(logged_user)
+    if logged_user is None:
+        raise BadRequest
+    return WebUserResponse(user=UserResponse.model_validate(logged_user))

@@ -118,7 +118,9 @@ class TokenService(BaseService):
     ):
         async with self.get_repo() as token_repo:
             return await token_repo.count_access_tokens(
-                force_id(user), realm, force_code(business)
+                force_id(user),
+                realm,
+                force_code(business) if business is not None else None,
             )
 
     async def refresh_tokens(

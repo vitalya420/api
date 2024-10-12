@@ -1,6 +1,6 @@
 from typing import Union
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.operators import eq
 
@@ -130,3 +130,31 @@ class BusinessRepository(BaseRepository):
         self.session.add(instance)
         await self.session.flush()
         return instance
+
+    async def get_clients(self, business_code: int, limit: int, offset: int):
+        query = (
+            (
+                select(Client)
+                .where(
+                    and_(
+                        eq(Client.business_code, business_code),
+                    )
+                )
+                .options(
+                    joinedload(Client.user),
+                )
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        res = await self.session.execute(query)
+        return res.scalars().all()
+
+    async def count_clients(self, business_code: int) -> int:
+        query = (
+            select(func.count())
+            .select_from(Client)
+            .where(Client.business_code == business_code)
+        )
+        res = await self.session.execute(query)
+        return res.scalar()

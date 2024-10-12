@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING, Self
+from typing import Optional, TYPE_CHECKING, Self, List
 
 from pydantic import BaseModel, field_validator
 
@@ -35,6 +35,12 @@ class BusinessBase(BaseModel):
     owner_id: int
 
 
+class BusinessCreate(BaseModel):
+    name: str
+    owner_id: Optional[int] = None
+    owner_phone: Optional[str] = None
+
+
 class BusinessResponse(BusinessBase):
     class Config:
         from_attributes = True
@@ -54,11 +60,18 @@ class ClientUpdate(ClientBase):
 
 
 class ClientResponse(ClientBase):
+    id: int
     image: Optional[str] = None
     bonuses: float
     qr_code: str
     phone: str
     is_staff: bool
+    created_at: str
+
+    @field_validator("created_at", mode="before")  # noqa
+    @classmethod
+    def format_created_at(cls, value):
+        return value.isoformat()
 
     class Config:
         from_attributes = True
@@ -78,7 +91,7 @@ class AuthRequest(BaseModel, _HasBusiness):
     password: Optional[str] = None
     business: Optional[str] = None
 
-    @field_validator("phone")
+    @field_validator("phone")  # noqa
     @classmethod
     def normalize_phone(cls, v):
         return normalize_phone_number(phone=v)
@@ -89,8 +102,11 @@ class AuthOTPSentResponse(BaseModel):
     message: Optional[str] = "OTP code sent successfully"
 
 
-class AuthWebUserResponse(BaseModel):
+class WebUserResponse(BaseModel):
     user: UserResponse
+
+
+class AuthWebUserResponse(WebUserResponse):
     business: BusinessResponse
     tokens: TokenPair
 
@@ -121,7 +137,7 @@ class IssuedTokenResponse(BaseModel):
     realm: Realm
     ip_address: str
     user_agent: str
-    business_code: str
+    business_code: Optional[str] = None
     issued_at: str
 
     class Config:
@@ -133,12 +149,22 @@ class IssuedTokenResponse(BaseModel):
         return value.isoformat()
 
 
-class ListIssuedTokenResponse(BaseModel):
+class PaginatedResponse(BaseModel):
     page: int
     per_page: int
     on_page: int
     total: int
+
+
+class ListIssuedTokenResponse(PaginatedResponse):
     tokens: list[IssuedTokenResponse]
+
+    class Config:
+        from_attributes = True
+
+
+class ListBusinessClientResponse(PaginatedResponse):
+    clients: List[ClientResponse]
 
     class Config:
         from_attributes = True

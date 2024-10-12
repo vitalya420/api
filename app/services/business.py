@@ -78,7 +78,7 @@ class BusinessService(BaseService):
             return await business_repo.get_business(business_code)
 
     async def get_clients(
-        self, business: Union[Business, str], limit: int = 10, offset: int = 0
+        self, business: Union[Business, str], limit: int = 20, offset: int = 0
     ):
         """
         Retrieve a list of clients associated with a specific business.
@@ -88,7 +88,7 @@ class BusinessService(BaseService):
 
         Args:
             business (Union[Business, str]): The business instance or its unique code.
-            limit (int, optional): The maximum number of clients to retrieve. Defaults to 10.
+            limit (int, optional): The maximum number of clients to retrieve. Defaults to 20.
             offset (int, optional): The number of clients to skip before starting to collect the result set. Defaults to 0.
 
         Returns:
@@ -189,6 +189,10 @@ class BusinessService(BaseService):
                 if hasattr(merged, key) and value is not None:
                     setattr(merged, key, value)
         return merged
+
+    async def count_clients(self, business: Union[Business, str]) -> int:
+        async with self.get_repo() as repo:
+            return await repo.count_clients(force_code(business))
 
 
 business_service = BusinessService(async_session_factory)

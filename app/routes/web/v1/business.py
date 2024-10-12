@@ -8,13 +8,7 @@ from sanic_ext.extensions.openapi.definitions import Response, Parameter
 from app.decorators import rules, login_required, admin_access, pydantic_response
 from app.exceptions import YouAreRetardedError
 from app.request import ApiRequest
-from app.schemas.business import (
-    BusinessCreate,
-    BusinessesResponse,
-    BusinessResponse,
-    BusinessCreationResponse,
-    BusinessClientsPaginatedResponse,
-)
+from app.schemas.new import BusinessResponse, BusinessCreate, ListBusinessClientResponse
 from app.schemas.pagination import PaginationQuery
 from app.services import business_service, user_service
 
@@ -44,7 +38,7 @@ business = Blueprint("web-business", url_prefix="/business")
         """
     ),
     response={
-        "application/json": BusinessesResponse.model_json_schema(
+        "application/json": BusinessResponse.model_json_schema(
             ref_template="#/components/schemas/{model}"
         ),
     },
@@ -53,8 +47,7 @@ business = Blueprint("web-business", url_prefix="/business")
 @rules(login_required)
 @pydantic_response
 async def get_business(request: ApiRequest):
-    businesses = (await request.get_user()).businesses
-    return BusinessesResponse(businesses=businesses)
+    return BusinessResponse.model_validate((await request.get_user()).business)
 
 
 @business.post("/")
@@ -110,7 +103,7 @@ async def get_business(request: ApiRequest):
     response=[
         Response(
             {
-                "application/json": BusinessCreationResponse.model_json_schema(
+                "application/json": BusinessResponse.model_json_schema(
                     ref_template="#/components/schemas/{model}"
                 )
             }
@@ -144,47 +137,10 @@ async def create_business(request: ApiRequest, body: BusinessCreate):
         # I added this block to make an IDE sure that instance will be created.
         raise BadRequest("💣 No fucking way this happened")
 
-    return BusinessCreationResponse(
-        message=f"Business {instance.name} created successfully!", business=instance
-    )
+    return BusinessResponse.model_validate(instance)
 
 
-@business.get("/<code>")
-@openapi.definition(
-    description=dedent(
-        """
-        ## Get business details by it's code
-
-        #### Example response
-
-        ```json
-        {
-          "code": "HRWKGEHCQUTA",
-          "name": "Coffee Shop",
-          "picture": "<url to image>",
-          "owner_id": 1
-        }
-        ```
-        """
-    ),
-    response={
-        "application/json": BusinessResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        ),
-    },
-    secured={"token": []},
-)
-@rules(login_required)
-@pydantic_response
-async def get_business_by_code(request: ApiRequest, code: str):
-    if (that_business := await business_service.get_business(code)) is None:
-        raise BadRequest(f"Business {code} not found")
-    if that_business.owner != await request.get_user():
-        raise Forbidden("Not your business")
-    return BusinessResponse.model_validate(that_business)
-
-
-@business.get("/<code>/clients")
+@business.get("/clients")
 @openapi.definition(
     description=dedent(
         """
@@ -196,7 +152,7 @@ async def get_business_by_code(request: ApiRequest, code: str):
     ),
     parameter=[Parameter("page", int, "query"), Parameter("per_page", int, "query")],
     response={
-        "application/json": BusinessClientsPaginatedResponse.model_json_schema(
+        "application/json": BusinessResponse.model_json_schema(
             ref_template="#/components/schemas/{model}"
         ),
     },
@@ -205,8 +161,18 @@ async def get_business_by_code(request: ApiRequest, code: str):
 @rules(login_required)
 @validate(query=PaginationQuery)
 @pydantic_response
-async def get_business_clients(request: ApiRequest, code: str):
-    that_business = await business_service.get_business(code)
-    if that_business.owner != await request.get_user():
-        raise Forbidden("Not your business")
-    clients = await business_service.get_clients(that_business)
+async def get_business_clients(request: ApiRequest, query: PaginationQuery):
+    that_business = (await request.get_user()).business
+
+    clients = await business_service.get_clients(
+        that_business, query.limit, query.offset
+    )
+    clients_total = await business_service.count_clients(that_business)
+
+    return ListBusinessClientResponse(
+        page=query.page,
+        per_page=query.per_page,
+        on_page=len(clients),
+        total=clients_total,
+        clients=clients,
+    )
