@@ -49,3 +49,7 @@ class PaginationQuery(BaseModel):
     def offset(self) -> int:
         """Calculates the offset based on the current page and items per page."""
         return (self.page - 1) * self.per_page
+
+
+class BusinessClientPaginatedRequest(PaginationQuery):
+    staff_only: bool = False

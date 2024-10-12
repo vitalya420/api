@@ -73,6 +73,11 @@ class ClientResponse(ClientBase):
     def format_created_at(cls, value):
         return value.isoformat()
 
+    @field_validator("image", mode="before")  # noqa
+    @classmethod
+    def set_image(cls, value):
+        return value if value is not None else "default-image.png"
+
     class Config:
         from_attributes = True
 

@@ -78,7 +78,11 @@ class BusinessService(BaseService):
             return await business_repo.get_business(business_code)
 
     async def get_clients(
-        self, business: Union[Business, str], limit: int = 20, offset: int = 0
+        self,
+        business: Union[Business, str],
+        staff_only: bool = False,
+        limit: int = 20,
+        offset: int = 0,
     ):
         """
         Retrieve a list of clients associated with a specific business.
@@ -96,7 +100,7 @@ class BusinessService(BaseService):
         """
         async with self.get_repo() as business_repo:
             result = await business_repo.get_clients(
-                force_code(business), limit, offset
+                force_code(business), staff_only, limit, offset
             )
         return result
 
@@ -190,9 +194,11 @@ class BusinessService(BaseService):
                     setattr(merged, key, value)
         return merged
 
-    async def count_clients(self, business: Union[Business, str]) -> int:
+    async def count_clients(
+        self, business: Union[Business, str], staff_only: bool = False
+    ) -> int:
         async with self.get_repo() as repo:
-            return await repo.count_clients(force_code(business))
+            return await repo.count_clients(force_code(business), staff_only)
 
 
 business_service = BusinessService(async_session_factory)

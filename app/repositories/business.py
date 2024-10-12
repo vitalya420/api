@@ -131,15 +131,16 @@ class BusinessRepository(BaseRepository):
         await self.session.flush()
         return instance
 
-    async def get_clients(self, business_code: int, limit: int, offset: int):
+    async def get_clients(
+        self, business_code: int, staff_only: bool, limit: int, offset: int
+    ):
+        and_clause = eq(Client.business_code, business_code)
+        if staff_only:
+            and_clause = and_(and_clause, eq(Client.is_staff, True))
         query = (
             (
                 select(Client)
-                .where(
-                    and_(
-                        eq(Client.business_code, business_code),
-                    )
-                )
+                .where(and_clause)
                 .options(
                     joinedload(Client.user),
                 )
@@ -150,11 +151,10 @@ class BusinessRepository(BaseRepository):
         res = await self.session.execute(query)
         return res.scalars().all()
 
-    async def count_clients(self, business_code: int) -> int:
-        query = (
-            select(func.count())
-            .select_from(Client)
-            .where(Client.business_code == business_code)
-        )
+    async def count_clients(self, business_code: int, staff_only: bool) -> int:
+        and_clause = eq(Client.business_code, business_code)
+        if staff_only:
+            and_clause = and_(and_clause, eq(Client.is_staff, True))
+        query = select(func.count()).select_from(Client).where(and_clause)
         res = await self.session.execute(query)
         return res.scalar()

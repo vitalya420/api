@@ -9,7 +9,7 @@ from app.decorators import rules, login_required, admin_access, pydantic_respons
 from app.exceptions import YouAreRetardedError
 from app.request import ApiRequest
 from app.schemas.new import BusinessResponse, BusinessCreate, ListBusinessClientResponse
-from app.schemas.pagination import PaginationQuery
+from app.schemas.pagination import PaginationQuery, BusinessClientPaginatedRequest
 from app.services import business_service, user_service
 
 business = Blueprint("web-business", url_prefix="/business")
@@ -150,7 +150,11 @@ async def create_business(request: ApiRequest, body: BusinessCreate):
 
         """
     ),
-    parameter=[Parameter("page", int, "query"), Parameter("per_page", int, "query")],
+    parameter=[
+        Parameter("page", int, "query"),
+        Parameter("per_page", int, "query"),
+        Parameter("staff_only", bool, "query"),
+    ],
     response={
         "application/json": BusinessResponse.model_json_schema(
             ref_template="#/components/schemas/{model}"
@@ -159,15 +163,19 @@ async def create_business(request: ApiRequest, body: BusinessCreate):
     secured={"token": []},
 )
 @rules(login_required)
-@validate(query=PaginationQuery)
+@validate(query=BusinessClientPaginatedRequest)
 @pydantic_response
-async def get_business_clients(request: ApiRequest, query: PaginationQuery):
+async def get_business_clients(
+    request: ApiRequest, query: BusinessClientPaginatedRequest
+):
     that_business = (await request.get_user()).business
 
     clients = await business_service.get_clients(
-        that_business, query.limit, query.offset
+        that_business, query.staff_only, query.limit, query.offset
     )
-    clients_total = await business_service.count_clients(that_business)
+    clients_total = await business_service.count_clients(
+        that_business, query.staff_only
+    )
 
     return ListBusinessClientResponse(
         page=query.page,
