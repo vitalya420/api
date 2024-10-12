@@ -34,7 +34,7 @@ def force_id(object_: Union[int, _HasID]) -> int:
     return object_.id
 
 
-def force_code(object_: Union[int, _HasCode]) -> str:
+def force_code(object_: Union[str, _HasCode]) -> str:
     """
     Retrieve the code from the given object or return the string if it is already a code.
 

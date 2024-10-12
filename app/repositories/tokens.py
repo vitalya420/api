@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Optional, Tuple, TypeVar, Type
+from datetime import datetime, timedelta
+from typing import Optional, Tuple, Type, TypeVar, Union
 
 from sqlalchemy import select, and_
 from sqlalchemy.orm import joinedload
@@ -10,7 +10,7 @@ from app.enums import Realm
 from app.exceptions import BusinessCodeNotProvided, RefreshTokenNotFound
 from app.models import AccessToken, RefreshToken
 
-T = TypeVar("T", AccessToken, RefreshToken)
+TokenType = TypeVar("TokenType", AccessToken, RefreshToken)
 
 
 class TokensRepository(BaseRepository):
@@ -43,10 +43,14 @@ class TokensRepository(BaseRepository):
         Returns:
             Tuple[AccessToken, RefreshToken]: The created access token and refresh token.
         """
+        now = datetime.utcnow()
+
         refresh_token = RefreshToken(
             user_id=user_id,
             realm=realm,
             business_code=business_code,
+            issued_at=now,
+            expires_at=now + timedelta(days=14),
         )
         self.session.add(refresh_token)
         await self.session.flush()
@@ -55,20 +59,25 @@ class TokensRepository(BaseRepository):
             user_id=user_id,
             realm=realm,
             business_code=business_code,
-            ip_addr=ip_address,
+            ip_address=ip_address,
             user_agent=user_agent,
+            issued_at=now,
+            expires_at=now + timedelta(days=7),
             refresh_token_jti=refresh_token.jti,
         )
         self.session.add(access_token)
         await self.session.flush()
+        refresh_token.access_token_jti = access_token.jti
         return access_token, refresh_token
 
-    async def get_token(self, class_: Type[T], jti: str, alive_only: bool = True) -> T:
+    async def get_token(
+        self, class_: Type[TokenType], jti: str, alive_only: bool = True
+    ) -> TokenType:
         """
         Retrieves a token (either AccessToken or RefreshToken) by its JTI (JWT ID).
 
         Args:
-            class_ (Type[T]): The class type of the token to retrieve (AccessToken or RefreshToken).
+            class_ (Type[TokenType]): The class type of the token to retrieve (AccessToken or RefreshToken).
             jti (str): The JWT ID of the token to retrieve.
             alive_only (bool): If True, only retrieves tokens that are not revoked and are still valid (default is True).
 
@@ -87,7 +96,7 @@ class TokensRepository(BaseRepository):
         res = await self.session.execute(query)
         return res.scalars().first()
 
-    async def revoke_token(self, class_: Type[T], jti: str):
+    async def revoke_token(self, class_: Type[TokenType], jti: str):
         """
         Revokes a token (either AccessToken or RefreshToken) by its JTI.
 

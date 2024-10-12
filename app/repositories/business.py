@@ -62,7 +62,12 @@ class BusinessRepository(BaseRepository):
         query = (
             select(Business)
             .where(Business.code == code)
-            .options(joinedload(Business.owner))
+            .options(
+                joinedload(Business.owner),
+                joinedload(Business.news),
+                joinedload(Business.menu_positions),
+                joinedload(Business.feedbacks),
+            )
         )
         res = await self.session.execute(query)
         return res.scalars().first()

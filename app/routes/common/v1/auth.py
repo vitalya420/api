@@ -136,6 +136,7 @@ async def authorization(request: ApiRequest, body: AuthRequest):
         user, access, refresh = await auth_service.with_context(
             {"request": request}
         ).business_admin_login(body.phone, body.password)
+        print("asd")
         return UserAuthorizedResponse(
             user=user,
             tokens=TokenPair(
@@ -207,16 +208,16 @@ async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
         raise BadRequest("Wrong or expired otp code")
 
     await otp_service.set_code_used(request.otp_context)
-    user = await user_service.get_or_create(request.otp_context.destination)
+    user = await user_service.get_or_create(request.otp_context.phone)
     client = await business_service.get_or_create_client(
-        request.otp_context.business, user
+        request.otp_context.business_code, user
     )
 
     access, refresh = await tokens_service.create_tokens(
         user.id,
         request=request,
         realm=request.otp_context.realm,
-        business_code=request.otp_context.business,
+        business_code=request.otp_context.business_code,
     )
     return AuthorizedClientResponse(
         client=client,

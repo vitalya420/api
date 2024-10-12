@@ -126,5 +126,9 @@ class Business(BaseCachableModel):
         cascade="all, delete-orphan",
     )
 
+    clients: Mapped[List["Client"]] = relationship(
+        "Client", back_populates="business", cascade="all, delete-orphan"
+    )
+
     def __repr__(self):
         return f"<Business(code='{self.code}', name='{self.name}', owner_id={self.owner_id})>"

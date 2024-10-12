@@ -3,7 +3,7 @@ import uuid
 from typing import Union
 
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Enum
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, relationship
 
 from app.base import BaseCachableModel
 from app.const import UUID_LENGTH, BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH
@@ -76,6 +76,10 @@ class RefreshToken(_BaseToken):
         String(UUID_LENGTH), ForeignKey("access_tokens.jti"), nullable=True
     )
 
+    access_token: Mapped["AccessToken"] = relationship(
+        "AccessToken", foreign_keys=[access_token_jti]
+    )
+
     def __repr__(self):
         return f"<RefreshToken(jti='{self.jti}', realm={self.realm}, user_id={self.user_id}, alive={self.is_alive()})>"
 
@@ -106,6 +110,10 @@ class AccessToken(_BaseToken):
     )
     refresh_token_jti: Mapped[Union[str, None]] = Column(
         String(UUID_LENGTH), ForeignKey("refresh_tokens.jti"), nullable=True
+    )
+
+    refresh_token: Mapped["RefreshToken"] = relationship(
+        "RefreshToken", foreign_keys=[refresh_token_jti]
     )
 
     def __repr__(self):

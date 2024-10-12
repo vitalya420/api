@@ -106,7 +106,7 @@ def otp_context_required(f: Callable) -> Callable:
         otp_code = await otp_service.get_unexpired_otp(body.phone, body.business)
         if otp_code is None:
             raise BadRequest("OTP code is expired")
-        if otp_code.destination != body.phone:
+        if otp_code.phone != body.phone:
             raise BadRequest("Bruh, wtf")  # this should never happen
         request.set_otp_context(otp_code)
         return await f(request, body, *args, **kwargs)

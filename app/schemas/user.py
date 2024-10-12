@@ -42,6 +42,7 @@ class UserCodeConfirm(BaseModel, HasPhone):
 class WebUserResponse(BaseModel):
     phone: str
     is_admin: bool
+    business: BusinessResponse
 
     class Config:
         from_attributes = True

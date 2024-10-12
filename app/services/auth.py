@@ -121,12 +121,12 @@ class AuthorizationService(BaseService):
             )
             if not user:
                 raise UserDoesNotExist(f"User with phone {phone} does not exists.")
-            if not user.businesses:
+            if not user.business:
                 raise UserHasNoBusinesses(f"User has no businesses to manage.")
-            if user.businesses and not user.password:
+            if user.business and not user.password:
                 raise YouAreRetardedError("How the fuck user even registered?")
             if not user.check_password(password):
-                raise WrongPassword
+                raise WrongPassword("Wrong password")
 
             token_pair = await tokens_service.with_context(
                 {"session": session}

@@ -10,8 +10,9 @@ from app.utils import random_code
 
 if TYPE_CHECKING:
     from app.models.bonus_log import BonusLog
-    from app.models.business import BusinessFeedback
+    from app.models.business import Business, BusinessFeedback
     from app.models.coupon import Coupon
+    from app.models.user import User
 
 
 class Client(BaseCachableModelWithIDAndDateTimeFields):
@@ -82,6 +83,16 @@ class Client(BaseCachableModelWithIDAndDateTimeFields):
     bonus_logs: Mapped[List["BonusLog"]] = relationship(
         "BonusLog", back_populates="client", cascade="all, delete-orphan"
     )
+
+    business: Mapped[List["Business"]] = relationship(
+        "Business", foreign_keys=[business_code], back_populates="clients"
+    )
+
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+
+    @property
+    def phone(self):
+        return self.user.phone
 
     def get_key(self) -> str:
         return f"{self.__tablename__}:{self.user_id}:{self.business_code}"

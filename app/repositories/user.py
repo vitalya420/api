@@ -84,7 +84,7 @@ class UserRepository(BaseRepository):
             where_clause = User.id == pk
         elif phone:
             where_clause = User.phone == phone
-        query = select(User).where(where_clause).options(joinedload(User.businesses))
+        query = select(User).where(where_clause).options(joinedload(User.business))
         res = await self.session.execute(query)
         return res.scalars().first()
 

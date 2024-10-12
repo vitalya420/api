@@ -58,9 +58,9 @@ class OTPRepository(BaseRepository):
             )
 
         instance = OTP(
-            destination=phone,
+            phone=phone,
             realm=realm,
-            business=business_code,
+            business_code=business_code,
             code=code,
             sent_at=sent_at,
             expires_at=expiration,
@@ -87,10 +87,10 @@ class OTPRepository(BaseRepository):
             update(OTP)
             .where(
                 and_(
-                    OTP.destination == phone,
-                    OTP.business == business_code,
-                    OTP.revoked == False,
-                    OTP.used == False,
+                    OTP.phone == phone,
+                    OTP.business_code == business_code,
+                    OTP.revoked.is_(False),
+                    OTP.used.is_(False),
                 )
             )
             .values(revoked=True)
@@ -116,8 +116,8 @@ class OTPRepository(BaseRepository):
         """
         query = select(OTP).where(
             and_(
-                OTP.destination == phone,
-                OTP.business == business_code,
+                OTP.phone == phone,
+                OTP.business_code == business_code,
                 OTP.expires_at > datetime.utcnow(),  # noqa
                 OTP.revoked.is_(False),
                 OTP.used.is_(False),
@@ -145,9 +145,9 @@ class OTPRepository(BaseRepository):
         """
         query = select(OTP).where(
             and_(
-                OTP.destination == phone,
-                OTP.business == business_code,
-                OTP.sent_at >= expiration,
+                OTP.phone == phone,
+                OTP.business_code == business_code,
+                OTP.expires_at <= expiration,
             )
         )
         result = await self.session.execute(query)
