@@ -18,15 +18,22 @@ class OTP(BaseModelWithID):
 
     Attributes:
         id (int): The unique identifier for the OTP entry (primary key).
-        phone (str): The destination (phone) where the OTP is sent.
-        code (str): The actual OTP code that is generated and sent to the destination.
-        sent_at (datetime): The timestamp indicating when the OTP was sent.
-        expires_at (datetime): The timestamp indicating when the OTP will expire.
-        used (int): A flag indicating whether the OTP has been used (0 for unused, 1 for used).
+        phone (str): The destination phone number where the OTP is sent. This can be null.
+        business_code (str): The code of the business associated with the OTP. This is a foreign key
+            referencing the 'businesses' table and can be null if not applicable.
+        realm (Realm): The realm or context in which the OTP is used, represented as an enum.
+        code (str): The actual OTP code that is generated and sent to the destination. This is a non-nullable string.
+        sent_at (datetime): The timestamp indicating when the OTP was sent. This is a non-nullable datetime.
+        expires_at (datetime): The timestamp indicating when the OTP will expire. This is a non-nullable datetime.
+        used (bool): A flag indicating whether the OTP has been used. Defaults to False.
+        revoked (bool): A flag indicating whether the OTP has been revoked. Defaults to False.
 
     Note:
         It is important to implement logic to handle OTP expiration and usage
         to ensure security and prevent abuse.
+
+    Methods:
+        __repr__() -> str: Returns a string representation of the OTP instance, indicating whether it is expired.
     """
 
     __tablename__ = "otps"

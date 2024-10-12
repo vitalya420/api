@@ -11,6 +11,27 @@ from app.enums import Realm
 
 
 class _BaseToken(BaseCachableModel):
+    """
+    An abstract base class representing a token in the system.
+
+    This class provides common attributes and methods for token management, including
+    properties for token identification, user association, and expiration handling.
+
+    Attributes:
+        jti (str): The unique identifier for the token (primary key), generated as a UUID.
+        realm (Realm): The realm or context in which the token is used, represented as an enum.
+        user_id (int): The ID of the user associated with the token. This is a foreign key referencing
+            the 'users' table and is non-nullable.
+        business_code (str): The code of the business associated with the token. This is a foreign key
+            referencing the 'businesses' table and can be null if not applicable.
+        revoked (bool): A flag indicating whether the token has been revoked. Defaults to False.
+        issued_at (datetime): The timestamp indicating when the token was issued. This is a non-nullable datetime.
+        expires_at (datetime): The timestamp indicating when the token will expire. This is a non-nullable datetime.
+
+    Methods:
+        is_alive() -> bool: Checks if the token is still valid (not expired and not revoked).
+    """
+
     __abstract__ = True
     __cache_key_attr__ = "jti"
 
@@ -36,6 +57,18 @@ class _BaseToken(BaseCachableModel):
 
 
 class RefreshToken(_BaseToken):
+    """
+    Represents a refresh token used to obtain new access tokens.
+
+    Attributes:
+        access_token_jti (Union[str, None]): The JTI of the associated access token. This is a foreign key
+            referencing the 'access_tokens' table and can be null if not applicable.
+
+    Methods:
+        __repr__() -> str: Returns a string representation of the RefreshToken instance, including its JTI,
+            realm, user ID, and whether it is alive.
+    """
+
     __tablename__ = "refresh_tokens"
     type_str = "refresh"
 
@@ -48,6 +81,20 @@ class RefreshToken(_BaseToken):
 
 
 class AccessToken(_BaseToken):
+    """
+    Represents an access token used for authenticating requests.
+
+    Attributes:
+        ip_address (Union[str, None]): The IP address from which the access token was issued. This can be null.
+        user_agent (Union[str, None]): The user agent string from which the access token was issued. This can be null.
+        refresh_token_jti (Union[str, None]): The JTI of the associated refresh token. This is a foreign key
+            referencing the 'refresh_tokens' table and can be null if not applicable.
+
+    Methods:
+        __repr__() -> str: Returns a string representation of the AccessToken instance, including its JTI,
+            realm, user ID, and whether it is alive.
+    """
+
     __tablename__ = "access_tokens"
     type_str = "access"
 

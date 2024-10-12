@@ -1,4 +1,5 @@
-from typing import Union
+from datetime import datetime
+from typing import Union, TYPE_CHECKING, List
 
 from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean, DateTime
 from sqlalchemy.orm import relationship, Mapped
@@ -7,8 +8,43 @@ from app.base import BaseCachableModelWithIDAndDateTimeFields
 from app.const import USER_QR_CODE_LENGTH, MAX_STRING_LENGTH, BUSINESS_CODE_LENGTH
 from app.utils import random_code
 
+if TYPE_CHECKING:
+    from app.models.bonus_log import BonusLog
+    from app.models.business import BusinessFeedback
+    from app.models.coupon import Coupon
+
 
 class Client(BaseCachableModelWithIDAndDateTimeFields):
+    """
+    Represents a client within the system, associated with a business and potentially a user.
+
+    Attributes:
+        user_id (Union[int, None]): The ID of the user associated with the client. This is a foreign key
+            referencing the 'users' table and can be null if not applicable.
+        business_code (Union[str, None]): The code of the business associated with the client. This is a
+            foreign key referencing the 'businesses' table and is non-nullable.
+        first_name (str): The first name of the client. This is a non-nullable string.
+        last_name (Union[str, None]): The last name of the client. This can be null.
+        bonuses (float): The total bonuses available to the client. This is a non-nullable float, defaulting to 0.0.
+        image (Union[str, None]): An optional URL or path to an image representing the client. This can be null.
+        is_staff (bool): A flag indicating whether the client has staff privileges. Defaults to False.
+        qr_code (Union[str, None]): A unique QR code for the client, generated using a random code. This can be null.
+        deleted (bool): A flag indicating whether the client record is marked as deleted. Defaults to False.
+        deleted_at (Union[datetime, None]): The timestamp when the client was marked as deleted. This can be null.
+
+    Relationships:
+        coupons (List[Coupon]): A relationship to the Coupon model, allowing access to the coupons associated
+            with the client.
+        feedback (BusinessFeedback): A relationship to the BusinessFeedback model, allowing access to the feedback
+            provided by the client. This is a single instance (uselist=False).
+        bonus_logs (List[BonusLog]): A relationship to the BonusLog model, allowing access to the bonus transaction
+            logs associated with the client.
+
+    Methods:
+        get_key() -> str: Generates a unique key for the client based on the table name, user ID, and business code.
+        __repr__() -> str: Returns a string representation of the Client instance.
+    """
+
     __tablename__ = "clients"
 
     user_id: Mapped[Union[int, None]] = Column(
@@ -30,20 +66,20 @@ class Client(BaseCachableModelWithIDAndDateTimeFields):
         String(USER_QR_CODE_LENGTH),
         default=lambda: str(random_code(USER_QR_CODE_LENGTH)),
     )
-    deleted = Column(Boolean, default=False)
-    deleted_at = Column(DateTime, nullable=True)
+    deleted: Mapped[bool] = Column(Boolean, default=False)
+    deleted_at: Mapped[datetime] = Column(DateTime, nullable=True)
 
-    coupons = relationship(
+    coupons: Mapped[List["Coupon"]] = relationship(
         "Coupon", back_populates="client", cascade="all, delete-orphan"
     )
-    feedback = relationship(
+    feedback: Mapped["BusinessFeedback"] = relationship(
         "BusinessFeedback",
         back_populates="client",
         uselist=False,
         cascade="all, delete-orphan",
     )
 
-    bonus_logs = relationship(
+    bonus_logs: Mapped[List["BonusLog"]] = relationship(
         "BonusLog", back_populates="client", cascade="all, delete-orphan"
     )
 
