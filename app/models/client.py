@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, ForeignKey, String, Float, Boolean, Date
 from sqlalchemy.orm import relationship, Mapped
 
 from app.base import BaseCachableModelWithIDAndDateTimeFields
-from app.const import USER_QR_CODE_LENGTH, MAX_STRING_LENGTH, BUSINESS_CODE_LENGTH
+from app.utils import USER_QR_CODE_LENGTH, MAX_STRING_LENGTH, BUSINESS_CODE_LENGTH
 from app.utils import random_code
 
 if TYPE_CHECKING:

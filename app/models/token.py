@@ -6,7 +6,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, E
 from sqlalchemy.orm import Mapped, relationship
 
 from app.base import BaseCachableModel
-from app.const import UUID_LENGTH, BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH
+from app.utils import UUID_LENGTH, BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH
 from app.enums import Realm
 
 

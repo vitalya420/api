@@ -3,7 +3,7 @@ from typing import Union, TYPE_CHECKING
 from sqlalchemy import Column, Integer, ForeignKey, String, Boolean, Float
 from sqlalchemy.orm import Mapped, relationship
 
-from app.const import COUPON_CODE_LENGTH, BUSINESS_CODE_LENGTH
+from app.utils import COUPON_CODE_LENGTH, BUSINESS_CODE_LENGTH
 from app.db import Base
 from app.utils import random_code
 

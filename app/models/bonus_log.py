@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime
 from sqlalchemy.orm import Mapped, relationship
 
 from app.base import BaseModelWithID
-from app.const import BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH, COUPON_CODE_LENGTH
+from app.utils import BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH, COUPON_CODE_LENGTH
 
 if TYPE_CHECKING:
     from app.models.client import Client

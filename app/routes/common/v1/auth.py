@@ -9,15 +9,15 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app.decorators import otp_context_required, pydantic_response
 from app.enums import Realm
 from app.request import ApiRequest
-from app.schemas import (
+from app.schemas.new import (
     AuthRequest,
-    AuthConfirmRequest,
     AuthResponse,
-    UserAuthorizedResponse,
-    OTPSentResponse,
+    AuthWebUserResponse,
     TokenPair,
+    AuthOTPSentResponse,
+    AuthOTPConfirmRequest,
+    AuthorizedClientResponse,
 )
-from app.schemas.business import AuthorizedClientResponse
 from app.services import (
     auth_service,
     otp_service,
@@ -25,7 +25,6 @@ from app.services import (
     tokens_service,
     business_service,
 )
-from app.utils.tokens import encode_token
 
 auth = Blueprint("auth", url_prefix="/auth")
 
@@ -96,12 +95,13 @@ auth = Blueprint("auth", url_prefix="/auth")
         {
           "user": {
             "phone": "+15551234567",
-            "businesses": [
-              {
-                "code": "HRWKGEHCQUTA",
-                "name": "My Business Name"
-              }
-            ]
+            "id": 1,
+            "is_admin": true
+          },
+          "business": {
+            "name": "Coffee Shop",
+            "code": "SHQDZGVTBITNYBBY",
+            "owner_id": 1
           },
           "tokens": {
             "access_token": "<access token>",
@@ -136,24 +136,21 @@ async def authorization(request: ApiRequest, body: AuthRequest):
         user, access, refresh = await auth_service.with_context(
             {"request": request}
         ).business_admin_login(body.phone, body.password)
-        print("asd")
-        return UserAuthorizedResponse(
+        return AuthWebUserResponse(
             user=user,
-            tokens=TokenPair(
-                access_token=encode_token(access),
-                refresh_token=encode_token(refresh),
-            ),
+            business=user.business,
+            tokens=TokenPair.from_models(access, refresh),
         )
     elif body.realm == Realm.mobile:
         await auth_service.send_otp(body.phone, body.realm, body.business)
-        return OTPSentResponse(message="OTP sent successfully.")
+        return AuthOTPSentResponse(message="OTP sent successfully.")
     raise InternalServerError("Unexpected error.", quiet=True)
 
 
 @auth.post("/confirm")
 @openapi.definition(
     body={
-        "application/json": AuthConfirmRequest.model_json_schema(
+        "application/json": AuthOTPConfirmRequest.model_json_schema(
             ref_template="#/components/schemas/{model}"
         )
     },
@@ -200,10 +197,10 @@ async def authorization(request: ApiRequest, body: AuthRequest):
     ),
     summary="Complete an authorization with OTP",
 )
-@validate(AuthConfirmRequest)
+@validate(AuthOTPConfirmRequest)
 @otp_context_required
 @pydantic_response
-async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
+async def confirm_auth(request: ApiRequest, body: AuthOTPConfirmRequest):
     if request.otp_context.code != body.otp:
         raise BadRequest("Wrong or expired otp code")
 
@@ -220,8 +217,5 @@ async def confirm_auth(request: ApiRequest, body: AuthConfirmRequest):
         business_code=request.otp_context.business_code,
     )
     return AuthorizedClientResponse(
-        client=client,
-        tokens=TokenPair(
-            access_token=encode_token(access), refresh_token=encode_token(refresh)
-        ),
+        client=client, tokens=TokenPair.from_models(access, refresh)
     )

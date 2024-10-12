@@ -1,3 +1,4 @@
+import asyncio
 from http import HTTPStatus
 from textwrap import dedent
 
@@ -5,16 +6,17 @@ import jwt
 from sanic import Blueprint, BadRequest
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
-from sanic_ext.extensions.openapi.definitions import Response
+from sanic_ext.extensions.openapi.definitions import Response, Parameter
 
 from app.decorators import rules, login_required, pydantic_response
 from app.request import ApiRequest
 from app.schemas import (
     RefreshTokenRequest,
     TokenPair,
-    TokensListPaginated,
     SuccessResponse,
 )
+from app.schemas.new import ListIssuedTokenResponse
+from app.schemas.pagination import PaginationQuery
 from app.services import tokens_service
 from app.utils.tokens import decode_token, encode_token
 
@@ -45,10 +47,14 @@ tokens = Blueprint("tokens", url_prefix="/tokens")
         ```
         """
     ),
+    parameter=[
+        Parameter("page", int, "query"),
+        Parameter("per_page", int, "query"),
+    ],
     response=[
         Response(
             {
-                "application/json": TokensListPaginated.model_json_schema(
+                "application/json": ListIssuedTokenResponse.model_json_schema(
                     ref_template="#/components/schemas/{model}"
                 )
             }
@@ -57,12 +63,29 @@ tokens = Blueprint("tokens", url_prefix="/tokens")
     secured={"token": []},
 )
 @rules(login_required)
+@validate(query=PaginationQuery)
 @pydantic_response
-async def list_issued_tokens(request: ApiRequest):
-    issued_tokens = await tokens_service.list_user_issued_tokens(
-        await request.get_user(), request.realm, request.business_code
+async def list_issued_tokens(request: ApiRequest, query: PaginationQuery):
+    user = await request.get_user()
+
+    total_coro = tokens_service.count_access_tokens(
+        user, request.realm, request.business_code
     )
-    return TokensListPaginated(tokens=issued_tokens)
+    issued_tokens_coro = tokens_service.list_user_issued_tokens(
+        user,
+        request.realm,
+        request.business_code,
+        query.limit,
+        query.offset,
+    )
+    total, issued_tokens = await asyncio.gather(total_coro, issued_tokens_coro)
+    return ListIssuedTokenResponse(
+        page=query.page,
+        per_page=query.per_page,
+        on_page=len(issued_tokens),
+        total=total,
+        tokens=issued_tokens,
+    )
 
 
 @tokens.post("/refresh")

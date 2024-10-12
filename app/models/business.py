@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship, Mapped
 
 from app.base import BaseCachableModel, BaseModelWithID
-from app.const import BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH
+from app.utils import BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH
 from app.utils import random_string_code
 
 if TYPE_CHECKING:

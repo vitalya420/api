@@ -18,7 +18,7 @@ def encode_token(token: Union["AccessToken", "RefreshToken"]):
         "business": token.business_code,
         "issued_at": int(token.issued_at.timestamp()),
         "expires_at": int(token.expires_at.timestamp()),
-        "type": token.type_str
+        "type": token.type_str,
     }
 
     return jwt.encode(payload, config["SECRET_KEY"], algorithm="HS256")

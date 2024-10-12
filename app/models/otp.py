@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import Mapped
 
 from app.base import BaseModelWithID
-from app.const import BUSINESS_CODE_LENGTH, MAX_PHONE_LENGTH, MAX_STRING_LENGTH
+from app.utils import BUSINESS_CODE_LENGTH, MAX_PHONE_LENGTH, MAX_STRING_LENGTH
 from app.enums import Realm
 
 

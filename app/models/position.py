@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Float, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import Mapped, relationship
 
 from app.base import BaseModelWithID
-from app.const import MAX_TITLE_NAME, MAX_STRING_LENGTH, BUSINESS_CODE_LENGTH
+from app.utils import MAX_TITLE_NAME, MAX_STRING_LENGTH, BUSINESS_CODE_LENGTH
 from app.enums import Currency
 from app.models import Coupon
 

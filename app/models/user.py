@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Boolean
 from sqlalchemy.orm import relationship, Mapped
 
 from app.base import BaseCachableModelWithID
-from app.const import MAX_PHONE_LENGTH, MAX_PASSWORD_LENGTH
+from app.utils import MAX_PHONE_LENGTH, MAX_PASSWORD_LENGTH
 
 if TYPE_CHECKING:
     from app.models.business import Business

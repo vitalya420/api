@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Type, TypeVar, Union
 
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.operators import eq
 
@@ -107,20 +107,30 @@ class TokensRepository(BaseRepository):
         if (token := await self.get_token(class_, jti)) is not None:
             token.revoked = True
 
-    async def get_tokens(self, user_id: int, realm: Realm, business_code: str):
+    async def get_tokens(
+        self, user_id: int, realm: Realm, business_code: str, limit: int = 20, offset=0
+    ):
         """
         Retrieves all access tokens for a specific user in a given realm and business code.
 
+        This method fetches access tokens associated with the specified user ID, realm, and business code.
+        The results can be paginated using the `limit` and `offset` parameters.
+
         Args:
             user_id (int): The ID of the user whose tokens are being retrieved.
-            realm (Realm): The realm in which the tokens are valid.
-            business_code (str): The business code associated with the tokens.
+            realm (Realm): The realm in which the tokens are valid (e.g., web or mobile).
+            business_code (str): The business code associated with the tokens. This is required if the realm is mobile.
+            limit (int, optional): The maximum number of tokens to return. Defaults to 20.
+            offset (int, optional): The number of tokens to skip before starting to collect the result set.
+                                    Defaults to 0.
 
         Returns:
-            List[AccessToken]: A list of access tokens associated with the user.
+            List[AccessToken]: A list of access tokens associated with the user. The list may be empty if no tokens are found.
 
         Raises:
             BusinessCodeNotProvided: If the realm is mobile and no business code is provided.
+            UserNotFoundError: If the specified user ID does not correspond to an existing user.
+            RealmNotFoundError: If the specified realm is invalid.
         """
         and_clause = and_(
             AccessToken.user_id == user_id,
@@ -132,11 +142,26 @@ class TokensRepository(BaseRepository):
                 raise BusinessCodeNotProvided(
                     "For mobile app business id should be provided."
                 )
-            eq_ = eq(AccessToken.business_code, business_code)
             and_clause = and_(and_clause, eq(AccessToken.business_code, business_code))
-        query = select(AccessToken).where(and_clause)
+        query = select(AccessToken).where(and_clause).limit(limit).offset(offset)
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def count_access_tokens(self, user_id: int, realm: Realm, business_code: str):
+        and_clause = and_(
+            AccessToken.user_id == user_id,
+            AccessToken.realm == realm,
+        )
+        if realm == Realm.mobile:
+            if business_code is None:
+                raise BusinessCodeNotProvided(
+                    "For mobile app business id should be provided."
+                )
+            and_clause = and_(and_clause, eq(AccessToken.business_code, business_code))
+
+        query = select(func.count()).select_from(AccessToken).where(and_clause)
+        total_count_result = await self.session.execute(query)
+        return total_count_result.scalar()
 
     async def refresh_revoke(
         self, refresh_jti: str

@@ -70,27 +70,55 @@ class TokenService(BaseService):
             return await token_repo.get_token(AccessToken, jti, alive_only)
 
     async def list_user_issued_tokens(
-        self, user: Union[User, int], realm: Realm, business: Union[Business, str, None]
+        self,
+        user: Union[User, int],
+        realm: Realm,
+        business: Union[Business, str, None],
+        limit: int = 20,
+        offset: int = 0,
     ):
         """
         List all tokens issued to a specific user.
 
         This method retrieves all access and refresh tokens associated with the specified user,
-        realm, and optional business code.
+        realm, and optional business code. The results can be paginated using the `limit` and `offset`
+        parameters.
 
         Args:
-            user (Union[User, int]): The user instance or the user's ID.
+            user (Union[User, int]): The user instance or the user's ID. If an integer is provided,
+                                      it should correspond to the user's unique identifier.
             realm (Realm): The realm indicating the context in which the tokens are used (e.g., web or mobile).
             business (Union[Business, str, None]): The business instance or its unique code, if applicable.
+                                                    If None, tokens for all businesses will be retrieved.
+            limit (int, optional): The maximum number of tokens to return. Defaults to 20.
+            offset (int, optional): The number of tokens to skip before starting to collect the result set.
+                                    Defaults to 0.
 
         Returns:
-            List[Union[AccessToken, RefreshToken]]: A list of tokens issued to the user.
+            List[Union[AccessToken, RefreshToken]]: A list of tokens (access and refresh) issued to the user.
+                                                     The list may be empty if no tokens are found.
+
+        Raises:
+            ValueError: If the `limit` is less than 1 or if the `offset` is negative.
+            UserNotFoundError: If the specified user does not exist.
+            RealmNotFoundError: If the specified realm is invalid.
+            BusinessNotFoundError: If the specified business does not exist (if applicable).
         """
         async with self.get_repo() as token_repo:
             return await token_repo.get_tokens(
                 force_id(user),
                 realm,
                 force_code(business) if business is not None else None,
+                limit,
+                offset,
+            )
+
+    async def count_access_tokens(
+        self, user: Union[User, int], realm: Realm, business: Union[Business, str, None]
+    ):
+        async with self.get_repo() as token_repo:
+            return await token_repo.count_access_tokens(
+                force_id(user), realm, force_code(business)
             )
 
     async def refresh_tokens(

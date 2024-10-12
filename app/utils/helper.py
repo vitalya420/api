@@ -1,18 +1,35 @@
 import random
 import re
 import string
-from functools import wraps
-from typing import Protocol, Union, Callable
+from typing import Protocol, Union
 
-from sanic import json
+from sqlalchemy.orm import Mapped
 
 
 class _HasID(Protocol):
-    id: int
+    """
+    A Protocol that defines an interface for objects that have an 'id' attribute.
+
+    Attributes:
+        id (Union[int, Mapped[int]]):
+            The 'id' attribute can be either a plain integer or a SQLAlchemy mapped integer type.
+            This attribute is expected to uniquely identify an instance of the implementing class.
+    """
+
+    id: Union[int, Mapped[int]]
 
 
 class _HasCode(Protocol):
-    code: str
+    """
+    A Protocol that defines an interface for objects that have a 'code' attribute.
+
+    Attributes:
+        code (Union[str, Mapped[str]]):
+            The 'code' attribute can be either a plain string or a SQLAlchemy mapped string type.
+            This attribute is expected to represent a specific code associated with the instance of the implementing class.
+    """
+
+    code: Union[str, Mapped["str"]]
 
 
 def force_id(object_: Union[int, _HasID]) -> int:
@@ -27,7 +44,7 @@ def force_id(object_: Union[int, _HasID]) -> int:
         int: The ID of the object.
 
     Raises:
-        AttributeError: If object_ is not an int and does not have an id attribute.
+        AttributeError: If an object_ is not an int and does not have an id attribute.
     """
     if isinstance(object_, int):
         return object_
@@ -52,7 +69,7 @@ def force_code(object_: Union[str, _HasCode]) -> str:
         str: The code of the object.
 
     Raises:
-        AttributeError: If object_ is not a string and does not have a 'code' attribute.
+        AttributeError: If an object_ is not a string and does not have a 'code' attribute.
     """
     if isinstance(object_, str):
         return object_

@@ -45,3 +45,8 @@ class Currency(str, Enum):
     UAH = "UAH"
     USD = "USD"
     EUR = "EUR"
+
+
+class AuthMethod(str, Enum):
+    password = "password"
+    otp = "otp"

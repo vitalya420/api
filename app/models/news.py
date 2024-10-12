@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Enum, ForeignKey, UniqueConstraint, Integ
 from sqlalchemy.orm import Mapped, relationship
 
 from app.base import BaseModelWithIDAndDateTimeFields, BaseModelWithID
-from app.const import (
+from app.utils import (
     MAX_TITLE_NAME,
     MAX_NEWS_CONTENT_LENGTH,
     BUSINESS_CODE_LENGTH,

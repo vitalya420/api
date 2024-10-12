@@ -1,4 +1,7 @@
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class BaseRepository:
@@ -14,7 +17,7 @@ class BaseRepository:
                                 used for database operations.
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: "AsyncSession"):
         """
         Initialize the BaseRepository with a database session.
 
@@ -22,4 +25,4 @@ class BaseRepository:
             session (AsyncSession): An instance of AsyncSession that will be
                                     used for executing database operations.
         """
-        self.session: AsyncSession = session
+        self.session: "AsyncSession" = session
