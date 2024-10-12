@@ -22,6 +22,9 @@ class NewsView(BaseModelWithID):
 
     news = relationship("News", back_populates="views")
 
+    def __repr__(self):
+        return f"<NewsView(news_id={self.news_id}, user_id={self.user_id})>"
+
 
 class News(BaseModelWithIDAndDateTimeFields):
     __tablename__ = "news"
@@ -42,3 +45,6 @@ class News(BaseModelWithIDAndDateTimeFields):
     views = relationship(
         "NewsView", back_populates="news", cascade="all, delete-orphan"
     )
+
+    def __repr__(self):
+        return f"<News(title={self.title}, content={self.content})>"

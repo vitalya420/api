@@ -33,3 +33,7 @@ class Coupon(Base):
     menu_position = relationship("MenuPosition", back_populates="coupons")
     client = relationship("Client", back_populates="coupons")
     business = relationship("Business", back_populates="issued_coupons")
+
+    def __repr__(self):
+        return (f"<Coupon(code='{self.code}', used='{self.used}', "
+                f"client_id={self.client_id}, menu_position_id={self.menu_position_id})>")

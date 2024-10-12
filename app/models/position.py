@@ -33,3 +33,8 @@ class MenuPosition(BaseModelWithID):
     coupons = relationship(
         "Coupon", back_populates="menu_position", cascade="all, delete-orphan"
     )
+
+    def __repr__(self):
+        return (f"<MenuPosition(title={self.title}, price={self.price}, currency={self.currency}, "
+                f"can_be_purchased_with_bonuses={self.can_be_purchased_with_bonuses},"
+                f"bonus_price={self.bonus_price})>")
