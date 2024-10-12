@@ -9,7 +9,7 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app.decorators import otp_context_required, pydantic_response
 from app.enums import Realm
 from app.request import ApiRequest
-from app.schemas.new import (
+from app.schemas import (
     AuthRequest,
     AuthResponse,
     AuthWebUserResponse,

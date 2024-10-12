@@ -8,8 +8,12 @@ from sanic_ext.extensions.openapi.definitions import Response, Parameter
 from app.decorators import rules, login_required, admin_access, pydantic_response
 from app.exceptions import YouAreRetardedError
 from app.request import ApiRequest
-from app.schemas.new import BusinessResponse, BusinessCreate, ListBusinessClientResponse
-from app.schemas.pagination import PaginationQuery, BusinessClientPaginatedRequest
+from app.schemas import (
+    BusinessResponse,
+    BusinessCreate,
+    ListBusinessClientResponse,
+    BusinessClientPaginatedRequest,
+)
 from app.services import business_service, user_service
 
 business = Blueprint("web-business", url_prefix="/business")

@@ -6,7 +6,7 @@ from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import pydantic_response, login_required
 from app.request import ApiRequest
-from app.schemas.new import WebUserResponse, UserResponse
+from app.schemas import WebUserResponse, UserResponse
 
 user = Blueprint("web-user", url_prefix="/user")
 

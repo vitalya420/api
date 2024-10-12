@@ -11,12 +11,12 @@ from sanic_ext.extensions.openapi.definitions import Response, Parameter
 from app.decorators import rules, login_required, pydantic_response
 from app.request import ApiRequest
 from app.schemas import (
-    RefreshTokenRequest,
+    ListIssuedTokenResponse,
     TokenPair,
+    PaginationQuery,
+    RefreshTokenRequest,
     SuccessResponse,
 )
-from app.schemas.new import ListIssuedTokenResponse
-from app.schemas.pagination import PaginationQuery
 from app.services import tokens_service
 from app.utils.tokens import decode_token, encode_token
 
@@ -171,7 +171,6 @@ async def refresh_token(request: ApiRequest, body: RefreshTokenRequest):
     secured={"token": []},
 )
 @rules(login_required)
-@pydantic_response
 async def logout(request: ApiRequest):
     await tokens_service.revoke_access_token(await request.get_access_token())
     return SuccessResponse(

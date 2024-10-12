@@ -6,7 +6,7 @@ from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import pydantic_response, login_required
 from app.request import ApiRequest
-from app.schemas import BusinessMinResponse
+from app.schemas import BusinessResponse
 
 business = Blueprint("mobile-business", url_prefix="/business")
 
@@ -31,7 +31,7 @@ business = Blueprint("mobile-business", url_prefix="/business")
     response=[
         Response(
             {
-                "application/json": BusinessMinResponse.model_json_schema(
+                "application/json": BusinessResponse.model_json_schema(
                     ref_template="#/components/schemas/{model}"
                 )
             }
@@ -45,7 +45,7 @@ async def get_business(request: ApiRequest):
     that_business = await request.get_business()
     if not that_business:
         raise InternalServerError("Something went wrong", quiet=True)
-    return BusinessMinResponse.model_validate(that_business)
+    return BusinessResponse.model_validate(that_business)
 
 
 @business.get("/news")

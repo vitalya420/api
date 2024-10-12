@@ -53,3 +53,10 @@ class PaginationQuery(BaseModel):
 
 class BusinessClientPaginatedRequest(PaginationQuery):
     staff_only: bool = False
+
+
+class PaginatedResponse(BaseModel):
+    page: int
+    per_page: int
+    on_page: int
+    total: int

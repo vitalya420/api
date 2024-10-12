@@ -1,36 +1,49 @@
-from typing import List, Optional
+from typing import TYPE_CHECKING, Self, Optional
 
-from pydantic import BaseModel
-from sanic_ext.extensions.openapi import openapi
+from pydantic import BaseModel, field_validator
 
+from app.enums import Realm
+from app.schemas.pagination import PaginatedResponse
+from app.utils import encode_token
 
-@openapi.component
-class Token(BaseModel):
-    jti: str
-    realm: str
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
-
-    class Config:
-        from_attributes = True
+if TYPE_CHECKING:
+    from app.models import AccessToken, RefreshToken
 
 
-@openapi.component
-class TokensListPaginated(BaseModel):
-    # page: int
-    # per_page: int
-    tokens: List[Token] = []
-
-    class Config:
-        from_attributes = True
-
-
-@openapi.component
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
-
-
-@openapi.component
 class TokenPair(BaseModel):
     access_token: str
+    refresh_token: str
+
+    @classmethod
+    def from_models(cls, access: "AccessToken", refresh: "RefreshToken") -> Self:
+        return cls(
+            access_token=encode_token(access), refresh_token=encode_token(refresh)
+        )
+
+
+class IssuedTokenResponse(BaseModel):
+    jti: str
+    realm: Realm
+    ip_address: str
+    user_agent: str
+    business_code: Optional[str] = None
+    issued_at: str
+
+    class Config:
+        from_attributes = True
+
+    @field_validator("issued_at", mode="before")  # noqa
+    @classmethod
+    def format_issued_at(cls, value):
+        return value.isoformat()
+
+
+class ListIssuedTokenResponse(PaginatedResponse):
+    tokens: list[IssuedTokenResponse]
+
+    class Config:
+        from_attributes = True
+
+
+class RefreshTokenRequest(BaseModel):
     refresh_token: str

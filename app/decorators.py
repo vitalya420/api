@@ -5,7 +5,7 @@ from sanic import Unauthorized, BadRequest, Forbidden, json
 
 from app.exceptions import BusinessIDRequired
 from app.request import ApiRequest
-from app.schemas.auth import AuthConfirmRequest
+from app.schemas import AuthOTPConfirmRequest
 from app.services import otp_service
 
 
@@ -100,7 +100,9 @@ def otp_context_required(f: Callable) -> Callable:
     """
 
     @wraps(f)
-    async def decorated(request: ApiRequest, body: AuthConfirmRequest, *args, **kwargs):
+    async def decorated(
+        request: ApiRequest, body: AuthOTPConfirmRequest, *args, **kwargs
+    ):
         if not body.phone:
             raise BadRequest("Invalid phone number")
         otp_code = await otp_service.get_unexpired_otp(body.phone, body.business)

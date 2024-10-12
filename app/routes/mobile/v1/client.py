@@ -9,7 +9,7 @@ from sanic_ext.extensions.openapi.definitions import Response
 from app.decorators import rules, login_required, pydantic_response
 from app.exceptions import YouAreRetardedError
 from app.request import ApiRequest
-from app.schemas.business import BusinessClientResponse, BusinessClientUpdateRequest
+from app.schemas import ClientResponse, ClientUpdateRequest
 from app.services import business_service
 
 client = Blueprint("mobile-client", url_prefix="/user")
@@ -43,7 +43,7 @@ client = Blueprint("mobile-client", url_prefix="/user")
     response=[
         Response(
             {
-                "application/json": BusinessClientResponse.model_json_schema(
+                "application/json": ClientResponse.model_json_schema(
                     ref_template="#/components/schemas/{model}"
                 )
             },
@@ -59,13 +59,13 @@ async def get_client(request: ApiRequest):
     if business_client is None:
         # This should not happen
         raise YouAreRetardedError("How are you authorized but you are not a client?")
-    return BusinessClientResponse.model_validate(business_client)
+    return ClientResponse.model_validate(business_client)
 
 
 @client.patch("/")
 @openapi.definition(
     body={
-        "application/json": BusinessClientUpdateRequest.model_json_schema(
+        "application/json": ClientUpdateRequest.model_json_schema(
             ref_template="#/components/schemas/{model}"
         )
     },
@@ -106,7 +106,7 @@ async def get_client(request: ApiRequest):
     response=[
         Response(
             {
-                "application/json": BusinessClientResponse.model_json_schema(
+                "application/json": ClientResponse.model_json_schema(
                     ref_template="#/components/schemas/{model}"
                 )
             },
@@ -115,14 +115,14 @@ async def get_client(request: ApiRequest):
     ],
     secured={"token": []},
 )
-@validate(BusinessClientUpdateRequest)
+@validate(ClientUpdateRequest)
 @rules(login_required)
 @pydantic_response
-async def update_client(request: ApiRequest, body: BusinessClientUpdateRequest):
+async def update_client(request: ApiRequest, body: ClientUpdateRequest):
     updated = await business_service.update_client(
         await request.get_client(), **body.model_dump()
     )
-    return BusinessClientResponse.model_validate(updated)
+    return ClientResponse.model_validate(updated)
 
 
 @client.delete("/")

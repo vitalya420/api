@@ -4,9 +4,8 @@ from typing import Union, Optional, Tuple
 from app.request import ApiRequest
 from app.base import BaseService
 from app.db import async_session_factory
-from app.models import AccessToken, Business, RefreshToken
+from app.models import AccessToken, Business, RefreshToken, User
 from app.repositories.tokens import TokensRepository
-from app.schemas.user import User
 from app.enums import Realm
 from app.utils import force_id, force_code
 
