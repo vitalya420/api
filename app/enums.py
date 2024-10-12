@@ -31,3 +31,10 @@ class Realm(str, Enum):
 
     web = "web"
     mobile = "mobile"
+
+
+@openapi.component
+class NewsContentType(str, Enum):
+    plain = "plain"
+    html = "html"
+    markdown = "markdown"
