@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from app.base import BaseService
 from app.db import async_session_factory
 from app.exceptions import UnableToCreateBusiness
-from app.models import Business, User, BusinessClient
+from app.models import Business, User, Client
 from app.repositories import BusinessRepository
 from app.services import user_service
 from app.utils import force_id, force_code
@@ -102,7 +102,7 @@ class BusinessService(BaseService):
 
     async def get_or_create_client(
         self, business: Union[Business, str], user: Union[User, int]
-    ) -> Union[BusinessClient, None]:
+    ) -> Union[Client, None]:
         """
         Retrieve an existing client or create a new one if it does not exist.
 
@@ -114,7 +114,7 @@ class BusinessService(BaseService):
            user (Union[User, int]): The user instance or the user's ID.
 
         Returns:
-           Union[BusinessClient, None]: The existing or newly created BusinessClient instance.
+           Union[Client, None]: The existing or newly created BusinessClient instance.
         """
         async with self.get_repo() as business_repo:
             if existing_client := await business_repo.get_client(
@@ -133,7 +133,7 @@ class BusinessService(BaseService):
         business: Union[Business, str],
         user: Union[User, int],
         use_cache: bool = True,
-    ) -> Union[BusinessClient, None]:
+    ) -> Union[Client, None]:
         """
         Retrieve a specific client associated with a business.
 
@@ -154,7 +154,7 @@ class BusinessService(BaseService):
                 key = f"{user_id}:{business_code}"
 
                 return await self.with_cache(
-                    BusinessClient,
+                    Client,
                     key,
                     business_repo.get_client,
                     business_code,
@@ -162,7 +162,7 @@ class BusinessService(BaseService):
                 )
             return await business_repo.get_client(force_code(business), force_id(user))
 
-    async def update_client(self, client: BusinessClient, **new_data):
+    async def update_client(self, client: Client, **new_data):
         """
         Update the attributes of a BusinessClient instance with new data.
 

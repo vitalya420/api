@@ -2,6 +2,7 @@ import datetime
 from typing import Union, List
 
 from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy.orm import Mapped
 
 from app.db import Base
 from app.mixins import CacheableMixin
@@ -21,7 +22,7 @@ class BaseModelWithID(Base):
 
     __abstract__ = True
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = Column(Integer, primary_key=True, autoincrement=True)
 
 
 class BaseModelWithDateTimeFields(Base):
@@ -39,8 +40,10 @@ class BaseModelWithDateTimeFields(Base):
 
     __abstract__ = True
 
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)  # noqa
-    updated_at = Column(
+    created_at: Mapped[datetime.datetime] = Column(
+        DateTime, default=datetime.datetime.utcnow
+    )  # noqa
+    updated_at: Mapped[datetime.datetime] = Column(
         DateTime,
         default=datetime.datetime.utcnow,  # noqa
         onupdate=datetime.datetime.utcnow,  # noqa

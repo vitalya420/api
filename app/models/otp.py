@@ -1,12 +1,14 @@
 from datetime import datetime
 
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum
+from sqlalchemy.orm import Mapped
 
+from app.base import BaseModelWithID
+from app.const import BUSINESS_CODE_LENGTH, MAX_PHONE_LENGTH, MAX_STRING_LENGTH
 from app.enums import Realm
-from app.base import BaseCachableModelWithID
 
 
-class OTP(BaseCachableModelWithID):
+class OTP(BaseModelWithID):
     """
     Represents a One-Time Password (OTP) entry in the database.
 
@@ -16,7 +18,7 @@ class OTP(BaseCachableModelWithID):
 
     Attributes:
         id (int): The unique identifier for the OTP entry (primary key).
-        destination (str): The destination (e.g., phone number or email) where the OTP is sent.
+        phone (str): The destination (phone) where the OTP is sent.
         code (str): The actual OTP code that is generated and sent to the destination.
         sent_at (datetime): The timestamp indicating when the OTP was sent.
         expires_at (datetime): The timestamp indicating when the OTP will expire.
@@ -29,16 +31,20 @@ class OTP(BaseCachableModelWithID):
 
     __tablename__ = "otps"
 
-    destination = Column(String)
-    business = Column(String, ForeignKey("business.code"))
-    realm = Column(Enum(Realm), nullable=True)
-    code = Column(String)
-    sent_at = Column(DateTime)
-    expires_at = Column(DateTime)
-    used = Column(Boolean, default=False)
-    revoked = Column(Boolean, default=False)
+    phone: Mapped[str] = Column(String(MAX_PHONE_LENGTH), nullable=True)
+    business_code: Mapped[str] = Column(
+        String(BUSINESS_CODE_LENGTH),
+        ForeignKey("businesses.code", ondelete="SET NULL"),
+        nullable=True,
+    )
+    realm: Mapped[Realm] = Column(Enum(Realm), nullable=False)
+    code: Mapped[str] = Column(String(MAX_STRING_LENGTH), nullable=False)
+    sent_at: Mapped[datetime] = Column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = Column(DateTime, nullable=False)
+    used: Mapped[bool] = Column(Boolean, default=False)
+    revoked: Mapped[bool] = Column(Boolean, default=False)
 
     def __repr__(self):
         now = datetime.utcnow()  # noqa
         expired = self.expires_at < now
-        return f"<OTP(id={self.id}, destination='{self.destination}', code='{self.code}', expired={expired})>"
+        return f"<OTP(id={self.id}, destination='{self.phone}', code='{self.code}', expired={expired})>"

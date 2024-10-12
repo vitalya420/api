@@ -12,7 +12,9 @@ config = context.config
 
 from app.config import Config
 
-postgres_keys: list[str] = list(filter(lambda k: k.startswith("POSTGRES_"), Config().keys()))
+postgres_keys: list[str] = list(
+    filter(lambda k: k.startswith("POSTGRES_"), Config().keys())
+)
 section = config.config_ini_section
 for key in postgres_keys:
     config.set_section_option(section, key, Config()[key])
@@ -23,7 +25,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 from app.db import Base
-from app import models
+from app.models import *
 
 target_metadata = Base.metadata
 
@@ -71,9 +73,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

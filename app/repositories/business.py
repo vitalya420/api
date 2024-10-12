@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.operators import eq
 
 from app.base import BaseRepository
-from app.models import User, Business, BusinessClient
+from app.models import User, Business, Client
 from app.utils import force_id
 
 
@@ -67,9 +67,7 @@ class BusinessRepository(BaseRepository):
         res = await self.session.execute(query)
         return res.scalars().first()
 
-    async def get_client(
-        self, business_code: str, user_id: int
-    ) -> Union[BusinessClient, None]:
+    async def get_client(self, business_code: str, user_id: int) -> Union[Client, None]:
         """
         Retrieve a BusinessClient instance by business code and user ID.
 
@@ -88,22 +86,22 @@ class BusinessRepository(BaseRepository):
             client = await repository.get_client("BUSINESS_CODE", 123)
         """
         query = (
-            select(BusinessClient)
+            select(Client)
             .where(
                 and_(
-                    eq(BusinessClient.business_code, business_code),
-                    eq(BusinessClient.user_id, user_id),
+                    eq(Client.business_code, business_code),
+                    eq(Client.user_id, user_id),
                 )
             )
             .options(
-                joinedload(BusinessClient.business),
-                joinedload(BusinessClient.user),
+                joinedload(Client.business),
+                joinedload(Client.user),
             )
         )
         res = await self.session.execute(query)
         return res.scalars().first()
 
-    async def add_client(self, business_code: str, user_id: int) -> BusinessClient:
+    async def add_client(self, business_code: str, user_id: int) -> Client:
         """
         Add a new BusinessClient instance to the database.
 
@@ -121,7 +119,7 @@ class BusinessRepository(BaseRepository):
         Example:
             new_client = await repository.add_client("BUSINESS_CODE", 123)
         """
-        instance = BusinessClient(
+        instance = Client(
             user_id=user_id, business_code=business_code, first_name=f"User {user_id}"
         )
         self.session.add(instance)

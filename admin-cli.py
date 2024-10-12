@@ -46,5 +46,6 @@ async def main():
     end = time.time()
     print(f"Time elapsed with no caching {end - start:02f} seconds")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())

@@ -38,3 +38,10 @@ class NewsContentType(str, Enum):
     plain = "plain"
     html = "html"
     markdown = "markdown"
+
+
+@openapi.component
+class Currency(str, Enum):
+    UAH = "UAH"
+    USD = "USD"
+    EUR = "EUR"

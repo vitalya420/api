@@ -3,7 +3,7 @@ from typing import Dict, Union, Callable, Awaitable, Type, Self
 from sanic import Request
 
 from app.enums import Realm
-from app.models import AccessToken, User, OTP, Business, BusinessClient
+from app.models import AccessToken, User, OTP, Business, Client
 from app.utils.tokens import decode_token
 
 
@@ -25,7 +25,7 @@ class ApiRequest(Request):
     token_getter: Callable[..., Awaitable[Union[AccessToken, None]]] = ...
     user_getter: Callable[..., Awaitable[Union[User, None]]] = ...
     business_getter: Callable[..., Awaitable[Union[Business, None]]] = ...
-    client_getter: Callable[..., Awaitable[Union[BusinessClient, None]]] = ...
+    client_getter: Callable[..., Awaitable[Union[Client, None]]] = ...
 
     def __init__(self, *sanic_args, **sanic_kwargs):
         """
@@ -42,7 +42,7 @@ class ApiRequest(Request):
         self._jwt_payload: Union[Dict[str, Union[str, int, bool]], None] = None
         self._access_token: Union[AccessToken, None] = None
         self._user: Union[User, None] = None
-        self._client: Union[BusinessClient, None] = None
+        self._client: Union[Client, None] = None
 
     async def get_access_token(self) -> Union[AccessToken, None]:
         """
@@ -96,7 +96,7 @@ class ApiRequest(Request):
             return None
         return await self.business_getter(self.business_code, use_cache=True)
 
-    async def get_client(self) -> Union[BusinessClient, None]:
+    async def get_client(self) -> Union[Client, None]:
         if self._client is None:
             business_code = self.business_code
             user_id = (await self.get_user()).id
@@ -164,7 +164,7 @@ class ApiRequest(Request):
         token_getter: Callable[..., Awaitable[Union[AccessToken, None]]],
         user_getter: Callable[..., Awaitable[Union[User, None]]],
         business_getter: Callable[..., Awaitable[Union[Business, None]]],
-        client_getter: Callable[..., Awaitable[Union[BusinessClient, None]]],
+        client_getter: Callable[..., Awaitable[Union[Client, None]]],
     ) -> Type[Self]:
         """
         Set the getter functions for retrieving access tokens, user information,
@@ -182,7 +182,7 @@ class ApiRequest(Request):
                 A callable that retrieves the user associated with the access token.
             business_getter (Callable[..., Awaitable[Union[Business, None]]]):
                 A callable that retrieves the business associated with the request.
-            client_getter (Callable[..., Awaitable[Union[BusinessClient, None]]]):
+            client_getter (Callable[..., Awaitable[Union[Client, None]]]):
                 A callable that retrieves the client associated with the request.
 
         Returns:

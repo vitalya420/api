@@ -1,37 +1,22 @@
 import bcrypt
 from sqlalchemy import Column, String, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 
 from app.base import BaseCachableModelWithID
+from app.const import MAX_PHONE_LENGTH, MAX_PASSWORD_LENGTH
 
 
 class User(BaseCachableModelWithID):
-    """
-    Represents a user in the system.
-
-    This class defines the user model, including attributes for phone number,
-    password, and admin status. It also establishes relationships with other
-    models, such as businesses owned by the user.
-
-    Attributes:
-        phone (str): The user's phone number, which must be unique.
-        password (str): The hashed password of the user (optional).
-        is_admin (bool): Indicates whether the user has admin privileges (default is False).
-        businesses (List[Business]): A list of businesses owned by the user.
-    """
-
     __tablename__ = "users"
-    __cache_key_attr__ = [
-        "id",
-        "phone",
-    ]  # id is main key and phone is reference to "users:<that id>"
+    __cache_key_attr__ = ["id", "phone"]
 
-    phone = Column(String(32), nullable=False, unique=True, index=True)
-    password = Column(String(255), nullable=True)
-    is_admin = Column(Boolean, default=False)
+    phone: Mapped[str] = Column(
+        String(MAX_PHONE_LENGTH), nullable=False, unique=True, index=True
+    )
+    password: Mapped[str] = Column(String(MAX_PASSWORD_LENGTH), nullable=True)
+    is_admin: Mapped[bool] = Column(Boolean, default=False)
 
-    businesses = relationship("Business", back_populates="owner")
-    clients = relationship("BusinessClient", back_populates="user")
+    business = relationship("Business", uselist=False, back_populates="owner")
 
     def check_password(self, plain_password: str) -> bool:
         """
