@@ -1,13 +1,16 @@
+from http import HTTPStatus
 from textwrap import dedent
 
 from sanic import Blueprint, json
+from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
 from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import rules, login_required, pydantic_response
 from app.exceptions import YouAreRetardedError
 from app.request import ApiRequest
-from app.schemas.business import BusinessClientResponse
+from app.schemas.business import BusinessClientResponse, BusinessClientUpdateRequest
+from app.services import business_service
 
 client = Blueprint("mobile-client", url_prefix="/user")
 
@@ -16,9 +19,13 @@ client = Blueprint("mobile-client", url_prefix="/user")
 @openapi.definition(
     description=dedent(
         """
-        ## Get information about current user (as business client).
+        ## Retrieve Information About the Current User (Business Client)
         
-        #### Example response
+        This endpoint provides detailed information about the currently authenticated user
+        in the context of a business client. The response includes essential user details
+        such as their name, business code, QR code, bonuses, phone number, and staff status.
+
+        #### Example Response
         
         ```json
         {
@@ -39,7 +46,8 @@ client = Blueprint("mobile-client", url_prefix="/user")
                 "application/json": BusinessClientResponse.model_json_schema(
                     ref_template="#/components/schemas/{model}"
                 )
-            }
+            },
+            status=HTTPStatus.OK,
         )
     ],
     secured={"token": []},
@@ -56,10 +64,65 @@ async def get_client(request: ApiRequest):
 
 @client.patch("/")
 @openapi.definition(
-    description="Update information about client", secured={"token": []}
+    body={
+        "application/json": BusinessClientUpdateRequest.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+    description=dedent(
+        """
+        ## Update Information for the Current Client
+        
+        This endpoint allows the authenticated business client to update their personal information.
+        The request body should include the fields that need to be updated. Only the fields provided
+        in the request will be modified.
+
+        #### Example Request
+        
+        ```json
+        {
+          "first_name": "Ryan",
+          "last_name": "Gosling"
+        }
+        ```
+        
+        #### Example Response
+        
+        Upon successful update, the response will return the updated client information:
+        
+        ```json
+        {
+          "first_name": "Ryan",
+          "last_name": "Gosling",
+          "business_code": "FJEQXAACNVCR",
+          "qr_code": "2593354118",
+          "bonuses": 0,
+          "phone": "+15551234567",
+          "is_staff": false
+        }
+        ```
+        """
+    ),
+    response=[
+        Response(
+            {
+                "application/json": BusinessClientResponse.model_json_schema(
+                    ref_template="#/components/schemas/{model}"
+                )
+            },
+            status=HTTPStatus.OK,
+        )
+    ],
+    secured={"token": []},
 )
-async def update_client(request: ApiRequest):
-    return json({"ok": True, "message": "Update information about client"})
+@validate(BusinessClientUpdateRequest)
+@rules(login_required)
+@pydantic_response
+async def update_client(request: ApiRequest, body: BusinessClientUpdateRequest):
+    updated = await business_service.update_client(
+        await request.get_client(), **body.model_dump()
+    )
+    return BusinessClientResponse.model_validate(updated)
 
 
 @client.delete("/")

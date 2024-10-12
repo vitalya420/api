@@ -150,7 +150,6 @@ class BusinessService(BaseService):
         """
         async with self.get_repo() as business_repo:
             if use_cache:
-
                 user_id, business_code = force_id(user), force_code(business)
                 key = f"{user_id}:{business_code}"
 
@@ -162,6 +161,34 @@ class BusinessService(BaseService):
                     user_id,
                 )
             return await business_repo.get_client(force_code(business), force_id(user))
+
+    async def update_client(self, client: BusinessClient, **new_data):
+        """
+        Update the attributes of a BusinessClient instance with new data.
+
+        This method merges the provided BusinessClient instance with the current session,
+        deletes the cached version of the client, and updates its attributes based on the
+        provided keyword arguments. Only attributes that exist on the BusinessClient instance
+        and have non-None values will be updated.
+
+        Args:
+            client (BusinessClient): The BusinessClient instance to be updated.
+            **new_data: Arbitrary keyword arguments representing the attributes to be updated
+                         and their new values.
+
+        Returns:
+            BusinessClient: The updated BusinessClient instance after merging changes.
+
+        Raises:
+            Exception: If there is an error during the session merge or attribute setting.
+        """
+        async with self.get_session() as session:
+            await self.cache_delete_object(client)
+            merged = await session.merge(client)
+            for key, value in new_data.items():
+                if hasattr(merged, key) and value is not None:
+                    setattr(merged, key, value)
+        return merged
 
 
 business_service = BusinessService(async_session_factory)

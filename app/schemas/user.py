@@ -41,7 +41,7 @@ class UserCodeConfirm(BaseModel, HasPhone):
 @openapi.component
 class WebUserResponse(BaseModel):
     phone: str
-    businesses: List[BusinessResponse]
+    is_admin: bool
 
     class Config:
         from_attributes = True

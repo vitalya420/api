@@ -86,3 +86,9 @@ class BusinessClientsPaginatedResponse(PaginationQuery):
 class AuthorizedClientResponse(BaseModel):
     client: BusinessClientResponse
     tokens: TokenPair
+
+
+@openapi.component
+class BusinessClientUpdateRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
