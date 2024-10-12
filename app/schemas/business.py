@@ -27,11 +27,18 @@ class Business(BaseModel):
     code: str
     name: str
     picture: Optional[str] = None
-    owner_id: int
+
+
+@openapi.component
+class BusinessMinResponse(Business):
+    class Config:
+        from_attributes = True
 
 
 @openapi.component
 class BusinessResponse(Business):
+    owner_id: int
+
     class Config:
         from_attributes = True
 
