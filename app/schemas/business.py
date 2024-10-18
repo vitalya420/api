@@ -10,6 +10,14 @@ class BusinessBase(BaseModel):
     name: str
     code: str
     owner_id: int
+    description: Optional[str] = None
+    image: Optional[str] = None
+
+
+class BusinessUpdate(BaseModel):
+    name: Optional[str] = None
+    image: Optional[str] = None
+    description: Optional[str] = None
 
 
 class BusinessCreate(BaseModel):

@@ -2,6 +2,7 @@ from typing import Union
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.functions import session_user
 from sqlalchemy.sql.operators import eq
 
 from app.base import BaseRepository
@@ -132,7 +133,7 @@ class BusinessRepository(BaseRepository):
         return instance
 
     async def get_clients(
-        self, business_code: int, staff_only: bool, limit: int, offset: int
+            self, business_code: int, staff_only: bool, limit: int, offset: int
     ):
         and_clause = eq(Client.business_code, business_code)
         if staff_only:
@@ -158,3 +159,10 @@ class BusinessRepository(BaseRepository):
         query = select(func.count()).select_from(Client).where(and_clause)
         res = await self.session.execute(query)
         return res.scalar()
+
+    async def update_business(self, business_code: str, **new_data):
+        business = await self.get_business(business_code)
+        for key, value in new_data.items():
+            if hasattr(business, key):
+                setattr(business, key, value)
+        self.session.add(business)

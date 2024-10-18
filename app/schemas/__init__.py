@@ -7,7 +7,7 @@ from .auth import (
     AuthResponse,
     AuthOTPConfirmRequest,
 )
-from .business import BusinessCreate, BusinessResponse, ListBusinessClientResponse
+from .business import BusinessCreate, BusinessResponse, ListBusinessClientResponse, BusinessUpdate
 from .client import ClientUpdateRequest, ClientResponse, AuthorizedClientResponse
 from .pagination import (
     PaginationQuery,
@@ -33,6 +33,7 @@ __all__ = [
     "BusinessCreate",
     "BusinessResponse",
     "ListBusinessClientResponse",
+    "BusinessUpdate",
     "ClientUpdateRequest",
     "ClientResponse",
     "AuthorizedClientResponse",

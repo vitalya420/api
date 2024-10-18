@@ -76,6 +76,7 @@ class SessionManagementMixin(ABC):
         else:
             async with self.session_factory() as session:
                 async with session.begin():
+                    self._running_session = session
                     yield session
 
     def with_context(self, context: Dict[Any, Any]) -> Self:
