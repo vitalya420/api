@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship, Mapped
 
 from app.base import BaseCachableModel, BaseModelWithID
-from app.utils import BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH
+from app.utils import BUSINESS_CODE_LENGTH, MAX_STRING_LENGTH, DESCRIPTION_LENGTH
 from app.utils import random_string_code
 
 if TYPE_CHECKING:
@@ -101,6 +101,7 @@ class Business(BaseCachableModel):
         default=lambda: random_string_code(BUSINESS_CODE_LENGTH),
     )
     name: Mapped[str] = Column(String(MAX_STRING_LENGTH), nullable=False)
+    description: Mapped[str] = Column(String(DESCRIPTION_LENGTH), nullable=True)
     image: Mapped[str] = Column(String(MAX_STRING_LENGTH), nullable=True)
     owner_id: Mapped[int] = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True

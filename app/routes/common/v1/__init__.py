@@ -14,7 +14,8 @@ from sanic import Blueprint
 
 from .auth import auth
 from .tokens import tokens
+from .upload import file_upload
 
-blueprint = (auth, tokens)
+blueprint = (auth, tokens, file_upload)
 
 common_v1 = Blueprint.group(*blueprint, url_prefix="/v1")

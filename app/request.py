@@ -158,6 +158,10 @@ class ApiRequest(Request):
         if self.jwt_payload and self.jwt_payload.get("realm"):
             return Realm(self.jwt_payload["realm"])
 
+    # @property
+    # def absolute_url(self):
+    #     proto = 'http' if self.
+
     @classmethod
     def set_getters(
         cls,

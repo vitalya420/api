@@ -1,3 +1,4 @@
+import os.path
 from typing import Type
 
 from sanic import Sanic
@@ -51,6 +52,16 @@ def create_app() -> Sanic:
         Sanic: The configured Sanic application instance.
     """
     app = Sanic("LoyaltyProgramAPI", request_class=create_request_class())
+
+    static_path = os.path.join(os.getcwd(), 'static')
+    user_uploads = os.path.join(static_path, 'user_uploads')
+    os.makedirs(user_uploads, exist_ok=True)
+    os.makedirs(user_uploads, exist_ok=True)
+    app.static('/static', static_path, directory_view=True)
+
+    app.ctx.user_uploads_dir = user_uploads
+    app.ctx.user_uploads_endpoint = '/static/user_uploads'
+
     app.blueprint(api)
 
     # Configure Swagger UI settings
@@ -84,6 +95,7 @@ def create_app() -> Sanic:
             req: The incoming request object.
             res: The outgoing response object.
         """
+        print('allowing cors')
         res.headers["Access-Control-Allow-Origin"] = "*"
 
     @app.after_server_start

@@ -22,6 +22,7 @@ from .tokens import (
 )
 from .user import UserResponse, WebUserResponse
 from .base import SuccessResponse
+from .file import FileUploadRequest
 
 __all__ = [
     "AuthRequest",
@@ -45,6 +46,7 @@ __all__ = [
     "UserResponse",
     "WebUserResponse",
     "SuccessResponse",
+    "FileUploadRequest"
 ]
 
 
