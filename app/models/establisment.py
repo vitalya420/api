@@ -14,8 +14,8 @@ class Address(BaseModelWithID):
     __tablename__ = "addresses"
 
     address: Mapped[str] = Column(String, primary_key=False)
-    longitude: Mapped[float] = Column(Float, nullable=False)
-    latitude: Mapped[float] = Column(Float, nullable=False)
+    longitude: Mapped[float] = Column(Float, nullable=True)
+    latitude: Mapped[float] = Column(Float, nullable=True)
 
     establishment: Mapped["Establishment"] = relationship(
         "Establishment", back_populates="address", uselist=False

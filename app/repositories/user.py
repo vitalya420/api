@@ -3,7 +3,7 @@ from typing import Optional, Union
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from app.models import User
+from app.models import User, Business, Establishment
 from app.base import BaseRepository
 from app.exceptions import UserExists, YouAreRetardedError, UserDoesNotExist
 from app.repositories.business import BusinessRepository
@@ -84,7 +84,18 @@ class UserRepository(BaseRepository):
             where_clause = User.id == pk
         elif phone:
             where_clause = User.phone == phone
-        query = select(User).where(where_clause).options(joinedload(User.business))
+        query = (
+            select(User)
+            .where(where_clause)
+            .options(
+                joinedload(User.business).options(
+                    joinedload(Business.establishments).options(
+                        joinedload(Establishment.address)
+                    ),
+                    joinedload(Business.owner),
+                )
+            )
+        )
         res = await self.session.execute(query)
         return res.scalars().first()
 

@@ -2,11 +2,10 @@ from typing import Union
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.orm import joinedload
-from sqlalchemy.sql.functions import session_user
 from sqlalchemy.sql.operators import eq
 
 from app.base import BaseRepository
-from app.models import User, Business, Client
+from app.models import User, Business, Client, Establishment
 from app.utils import force_id
 
 
@@ -68,6 +67,9 @@ class BusinessRepository(BaseRepository):
                 joinedload(Business.news),
                 joinedload(Business.menu_positions),
                 joinedload(Business.feedbacks),
+                joinedload(Business.establishments).options(
+                    joinedload(Establishment.address)
+                )
             )
         )
         res = await self.session.execute(query)

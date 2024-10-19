@@ -3,6 +3,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 from app.schemas.client import ClientResponse
+from app.schemas.establishment import EstablishmentResponse
 from app.schemas.pagination import PaginatedResponse
 
 
@@ -27,6 +28,8 @@ class BusinessCreate(BaseModel):
 
 
 class BusinessResponse(BusinessBase):
+    establishments: List[EstablishmentResponse] = list()
+
     class Config:
         from_attributes = True
 

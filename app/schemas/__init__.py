@@ -19,6 +19,13 @@ from .pagination import (
     PaginatedResponse,
     BusinessClientPaginatedRequest,
 )
+from .establishment import (
+    EstablishmentCreate,
+    EstablishmentUpdate,
+    EstablishmentAddress,
+    EstablishmentResponse,
+    EstablishmentsResponse,
+)
 from .tokens import (
     TokenPair,
     IssuedTokenResponse,
@@ -28,6 +35,7 @@ from .tokens import (
 from .user import UserResponse, WebUserResponse
 from .base import SuccessResponse
 from .file import FileUploadRequest
+from .work_schedule import WorkScheduleCreate, WorkScheduleUpdate, WorkScheduleCopy
 
 __all__ = [
     "AuthRequest",
@@ -45,6 +53,11 @@ __all__ = [
     "PaginationQuery",
     "PaginatedResponse",
     "BusinessClientPaginatedRequest",
+    "EstablishmentCreate",
+    "EstablishmentUpdate",
+    "EstablishmentAddress",
+    "EstablishmentResponse",
+    "EstablishmentsResponse",
     "TokenPair",
     "IssuedTokenResponse",
     "ListIssuedTokenResponse",
@@ -53,6 +66,9 @@ __all__ = [
     "WebUserResponse",
     "SuccessResponse",
     "FileUploadRequest",
+    "WorkScheduleCreate",
+    "WorkScheduleUpdate",
+    "WorkScheduleCopy",
 ]
 
 

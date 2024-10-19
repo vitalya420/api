@@ -16,7 +16,8 @@ from sanic import Blueprint
 
 from .user import user
 from .business import business
+from .establishments import establishments
 
-blueprints = (user, business)
+blueprints = (user, business, establishments)
 
 web_api_v1 = Blueprint.group(*blueprints, url_prefix="/v1")

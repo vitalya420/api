@@ -1,13 +1,15 @@
 import asyncio
-from typing import Union
+from typing import Union, Optional
+from venv import create
 
 from sqlalchemy.exc import IntegrityError
 
 from app.base import BaseService
 from app.db import async_session_factory
 from app.exceptions import UnableToCreateBusiness
-from app.models import Business, User, Client
+from app.models import Business, User, Client, Establishment
 from app.repositories import BusinessRepository
+from app.repositories.establishment import EstablishmentRepository
 from app.services import user_service
 from app.utils import force_id, force_code
 
@@ -206,9 +208,31 @@ class BusinessService(BaseService):
         updated = await self.get_business(force_code(business), use_cache=False)
         await asyncio.gather(
             self.cache_delete_object(updated),
-            self.cache_delete_object(updated.owner),
+            self.cache_delete_object(updated.owner),  # noqa
         )
         return updated
+
+    async def create_establishment(
+        self,
+        business: Union[Business, str],
+        address: Optional[str] = None,
+        long: Optional[float] = None,
+        lat: Optional[float] = None,
+        image: Optional[str] = None,
+    ):
+        async with self.get_repo(EstablishmentRepository) as est_repo:
+            est_repo: EstablishmentRepository
+            business = (
+                await self.reuse_session().get_business(business)
+                if isinstance(business, str)
+                else business
+            )
+            await self.cache_delete_object(business)
+            await self.cache_delete_object(business.owner)
+            created = await est_repo.create(
+                business.code, business.name, address, long, lat, image  # noqa
+            )
+        return created
 
 
 business_service = BusinessService(async_session_factory)
