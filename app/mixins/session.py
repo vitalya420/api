@@ -78,6 +78,7 @@ class SessionManagementMixin(ABC):
                 async with session.begin():
                     self._running_session = session
                     yield session
+                    self._running_session = None
 
     def with_context(self, context: Dict[Any, Any]) -> Self:
         """

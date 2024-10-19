@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing_extensions import Optional
 
 
@@ -8,11 +8,22 @@ class EstablishmentBase(BaseModel):
     name: str
 
 
-class EstablishmentCreate(EstablishmentBase):
-    image: Optional[str] = None
+class EstablishmentCreate(BaseModel):
     address: Optional[str] = None
     longitude: Optional[float] = None
     latitude: Optional[float] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_coordinates(cls, values):
+        longitude = values.get("longitude")
+        latitude = values.get("latitude")
+
+        if (longitude is None) != (latitude is None):
+            values["longitude"] = None
+            values["latitude"] = None
+
+        return values
 
 
 class EstablishmentUpdate(EstablishmentCreate):

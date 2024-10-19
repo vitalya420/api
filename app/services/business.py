@@ -228,11 +228,43 @@ class BusinessService(BaseService):
                 else business
             )
             await self.cache_delete_object(business)
-            await self.cache_delete_object(business.owner)
+            await self.cache_delete_object(business.owner)  # noqa
             created = await est_repo.create(
                 business.code, business.name, address, long, lat, image  # noqa
             )
         return created
+
+    async def update_establishment_image(
+        self, owner: Union[User, int], est_id: int, image_url: str
+    ):
+        """
+        Owner id is for safety to be sure that owner updated image
+        """
+        async with self.get_repo(EstablishmentRepository) as est_repo:
+            est_repo: EstablishmentRepository
+            await est_repo.update_establishment_image(
+                force_id(owner), est_id, image_url
+            )
+            if isinstance(owner, User):
+                await self.cache_delete_object(owner)
+            elif isinstance(owner, int):
+                await self.cache_delete(User.lookup_key(owner))
+
+            return await est_repo.get_establishment(est_id)
+
+    async def delete_establishment(self, owner: Union[User, int], est_id: int):
+        async with self.get_repo(EstablishmentRepository) as est_repo:
+            est_repo: EstablishmentRepository
+            est = await est_repo.get_establishment(est_id)
+            if est and est.business.owner_id == force_id(owner):
+                await self.cache_delete_object(est.business)
+                await self.get_running_session().delete(est)
+            if isinstance(owner, User):
+                await self.cache_delete_object(owner)
+            elif isinstance(owner, int):
+                await self.cache_delete(User.lookup_key(owner))
+
+        return est
 
 
 business_service = BusinessService(async_session_factory)

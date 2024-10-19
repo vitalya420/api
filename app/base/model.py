@@ -121,7 +121,7 @@ class BaseCachableModel(Base, CacheableMixin):
         ]
 
     @classmethod
-    def lookup_key(cls, key: str) -> str:
+    def lookup_key(cls, key: Union[str, int]) -> str:
         """
         Generate a lookup key for the class.
 

@@ -1,7 +1,10 @@
 from typing import Optional
 
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+
 from app.base import BaseRepository
-from app.models import Establishment, Address
+from app.models import Establishment, Address, Business
 
 
 class EstablishmentRepository(BaseRepository):
@@ -27,3 +30,27 @@ class EstablishmentRepository(BaseRepository):
 
         await self.session.flush()
         return instance
+
+    async def get_establishment(self, est_id: int) -> Establishment:
+        query = (
+            select(Establishment)
+            .where(Establishment.id == est_id)
+            .options(
+                joinedload(Establishment.address), joinedload(Establishment.business)
+            )
+        )
+        res = await self.session.execute(query)
+        return res.scalars().first()
+
+    async def update_establishment_image(self, user_id: int, est_id: int, image: str):
+        query = (
+            select(Establishment)
+            .join(Establishment.business)
+            .filter(Establishment.id == est_id, Business.owner_id == user_id)
+            .options(joinedload(Establishment.business))
+        )
+        res = await self.session.execute(query)
+        establishment = res.scalars().first()
+        if establishment:
+            establishment.image = image
+        await self.session.flush()

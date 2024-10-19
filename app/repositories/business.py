@@ -69,7 +69,7 @@ class BusinessRepository(BaseRepository):
                 joinedload(Business.feedbacks),
                 joinedload(Business.establishments).options(
                     joinedload(Establishment.address)
-                )
+                ),
             )
         )
         res = await self.session.execute(query)
