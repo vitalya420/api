@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from app.models.coupon import Coupon
     from app.models.user import User
     from app.models.position import MenuPosition
+    from app.models.establisment import Establishment
 
 
 class BusinessFeedback(BaseModelWithID):
@@ -70,6 +71,7 @@ class Business(BaseCachableModel):
         code (str): A unique code identifying the business. This is the primary key and is generated
             using a random string code.
         name (str): The name of the business. This is a non-nullable string.
+        description (str): Description of the business.
         image (Union[str, None]): An optional URL or path to an image representing the business.
             This can be null.
         owner_id (int): The ID of the user who owns the business. This is a foreign key referencing
@@ -129,6 +131,10 @@ class Business(BaseCachableModel):
 
     clients: Mapped[List["Client"]] = relationship(
         "Client", back_populates="business", cascade="all, delete-orphan"
+    )
+
+    establishments: Mapped[List["Establishment"]] = relationship(
+        "Establishment", back_populates="business", cascade="all, delete-orphan"
     )
 
     def __repr__(self):

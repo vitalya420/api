@@ -8,7 +8,7 @@ from app.utils import random_code
 
 
 async def send_sms_to_phone(
-        phone: str, code: Optional[str] = None, code_length: Optional[int] = None
+    phone: str, code: Optional[str] = None, code_length: Optional[int] = None
 ):
     """
     Send an SMS to a specified phone number with a verification code.
@@ -44,11 +44,13 @@ async def compress_image(image_bytes: bytes, quality: int = 70):
         image_file = io.BytesIO(image_bytes)
         image = Image.open(image_file)
 
-        if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+        if image.mode in ("RGBA", "LA") or (
+            image.mode == "P" and "transparency" in image.info
+        ):
             image = image.convert("RGB")
 
         buffer = io.BytesIO()
-        image.save(buffer, format='JPEG', quality=quality)
+        image.save(buffer, format="JPEG", quality=quality)
         return buffer.getvalue()
 
     return await asyncio.get_event_loop().run_in_executor(None, _do_compress)

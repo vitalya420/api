@@ -50,3 +50,13 @@ class Currency(str, Enum):
 class AuthMethod(str, Enum):
     password = "password"
     otp = "otp"
+
+
+class DayOfWeek(str, Enum):
+    monday = "monday"
+    tuesday = "tuesday"
+    wednesday = "wednesday"
+    thursday = "thursday"
+    friday = "friday"
+    saturday = "saturday"
+    sunday = "sunday"

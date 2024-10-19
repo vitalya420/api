@@ -12,7 +12,8 @@ from app.schemas import (
     BusinessResponse,
     BusinessCreate,
     ListBusinessClientResponse,
-    BusinessClientPaginatedRequest, BusinessUpdate,
+    BusinessClientPaginatedRequest,
+    BusinessUpdate,
 )
 from app.services import business_service, user_service
 
@@ -120,7 +121,7 @@ async def get_business(request: ApiRequest):
 @pydantic_response
 async def create_business(request: ApiRequest, body: BusinessCreate):
     if (none := (body.owner_id is None and body.owner_phone is None)) or (
-            (body.owner_id and body.owner_phone)
+        (body.owner_id and body.owner_phone)
     ):
         raise YouAreRetardedError(
             "Have you read the docs? On of there required: owner_id or owner_phone, not {}".format(
@@ -144,7 +145,7 @@ async def create_business(request: ApiRequest, body: BusinessCreate):
     return BusinessResponse.model_validate(instance)
 
 
-@business.patch('/')
+@business.patch("/")
 @openapi.definition(
     body={"application/json": BusinessUpdate.model_json_schema()},
     secured={"token": []},
@@ -184,7 +185,7 @@ async def update_business(request: ApiRequest, body: BusinessUpdate):
 @validate(query=BusinessClientPaginatedRequest)
 @pydantic_response
 async def get_business_clients(
-        request: ApiRequest, query: BusinessClientPaginatedRequest
+    request: ApiRequest, query: BusinessClientPaginatedRequest
 ):
     that_business = (await request.get_user()).business
 

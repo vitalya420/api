@@ -55,7 +55,7 @@ class BusinessService(BaseService):
             )
 
     async def get_business(
-            self, business_code: str, use_cache: bool = True
+        self, business_code: str, use_cache: bool = True
     ) -> Union[Business, None]:
         """
         Retrieve a business entity by its unique business code.
@@ -78,11 +78,11 @@ class BusinessService(BaseService):
             return await business_repo.get_business(business_code)
 
     async def get_clients(
-            self,
-            business: Union[Business, str],
-            staff_only: bool = False,
-            limit: int = 20,
-            offset: int = 0,
+        self,
+        business: Union[Business, str],
+        staff_only: bool = False,
+        limit: int = 20,
+        offset: int = 0,
     ):
         """
         Retrieve a list of clients associated with a specific business.
@@ -105,7 +105,7 @@ class BusinessService(BaseService):
         return result
 
     async def get_or_create_client(
-            self, business: Union[Business, str], user: Union[User, int]
+        self, business: Union[Business, str], user: Union[User, int]
     ) -> Union[Client, None]:
         """
         Retrieve an existing client or create a new one if it does not exist.
@@ -122,7 +122,7 @@ class BusinessService(BaseService):
         """
         async with self.get_repo() as business_repo:
             if existing_client := await business_repo.get_client(
-                    force_code(business), force_id(user)
+                force_code(business), force_id(user)
             ):
                 await self.cache_object(existing_client)
                 return existing_client
@@ -133,10 +133,10 @@ class BusinessService(BaseService):
         return await self.get_client(business, user)
 
     async def get_client(
-            self,
-            business: Union[Business, str],
-            user: Union[User, int],
-            use_cache: bool = True,
+        self,
+        business: Union[Business, str],
+        user: Union[User, int],
+        use_cache: bool = True,
     ) -> Union[Client, None]:
         """
         Retrieve a specific client associated with a business.
@@ -195,7 +195,7 @@ class BusinessService(BaseService):
         return merged
 
     async def count_clients(
-            self, business: Union[Business, str], staff_only: bool = False
+        self, business: Union[Business, str], staff_only: bool = False
     ) -> int:
         async with self.get_repo() as repo:
             return await repo.count_clients(force_code(business), staff_only)

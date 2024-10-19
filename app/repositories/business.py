@@ -133,7 +133,7 @@ class BusinessRepository(BaseRepository):
         return instance
 
     async def get_clients(
-            self, business_code: int, staff_only: bool, limit: int, offset: int
+        self, business_code: int, staff_only: bool, limit: int, offset: int
     ):
         and_clause = eq(Client.business_code, business_code)
         if staff_only:
