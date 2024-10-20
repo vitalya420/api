@@ -1,4 +1,5 @@
 from app.base import BaseService
+from app.enums import DayOfWeek
 from app.repositories.establishment import EstablishmentRepository
 
 
@@ -14,5 +15,11 @@ class EstablishmentService(BaseService):
     async def update_establishment(self, pk: int, **data):
         pass
 
-    async def set_work_schedule(self, pk: int):
+    async def set_establishment_image(self, pk, owner, image_url):
         pass
+
+    async def set_work_schedule(self, pk: int, **schedule):
+        for day, day_schedule in schedule.items():
+            day = DayOfWeek(day)
+            print(day, day_schedule)
+
