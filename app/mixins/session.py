@@ -1,3 +1,4 @@
+import warnings
 from abc import ABC
 from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional, Union, AsyncGenerator, Self
@@ -38,9 +39,11 @@ class SessionManagementMixin(ABC):
         """
         self.session_factory: async_sessionmaker = session_factory
         self.context: Dict[Any, Any] = context or dict()
-        self._running_session: Union[AsyncSession, None] = None
+        self._running_sessions: set[AsyncSession] = set()
 
-    def get_running_session(self) -> Union[AsyncSession, None]:
+    def get_running_session(
+        self, do_not_warn: bool = False
+    ) -> Union[AsyncSession, None]:
         """
         Retrieve the currently running database session from the context.
 
@@ -51,7 +54,13 @@ class SessionManagementMixin(ABC):
             Union[AsyncSession, None]: The currently running session if found,
                                         or None if no session is available.
         """
-        return self.context.get("session") or self._running_session
+        if (not self.is_isolated and self.is_default) and not do_not_warn:
+            warnings.warn(
+                "Calling get_running_session() in not isolated default service can cause bugs in concurrent requests.",
+                UserWarning,
+            )
+
+        return self.context.get("session")
 
     @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
@@ -71,14 +80,16 @@ class SessionManagementMixin(ABC):
             Exception: Any exceptions raised during session management will
                        propagate to the caller.
         """
-        if running_session := self.get_running_session():
+        if (self.is_isolated or not self.is_default) and (
+            running_session := self.context.get("session")
+        ):
             yield running_session
         else:
             async with self.session_factory() as session:
                 async with session.begin():
-                    self._running_session = session
+                    self.context["session"] = session
                     yield session
-                    self._running_session = None
+                    self.context.pop("session")
 
     def with_context(self, context: Dict[Any, Any]) -> Self:
         """
@@ -98,22 +109,16 @@ class SessionManagementMixin(ABC):
             session_factory=self.session_factory, context={**self.context, **context}
         )
 
-    def reuse_session(self) -> Self:
-        """
-        Reuse the current running database session within a new context.
+    def isolate(self):
+        return self.__class__(
+            self.session_factory,
+            {**self.context, "_is_isolated": True, "_parent": self},
+        )
 
-        This method checks if there is an active database session. If a session is
-        running, it creates a new instance of the mixin with the current context
-        and includes the running session in the context. If there is no active
-        session, it raises a RuntimeError.
+    @property
+    def is_isolated(self) -> bool:
+        return self.context.get("_is_isolated", False)
 
-        Returns:
-            Self: A new instance of the mixin with the updated context that includes
-                  the current running session.
-
-        Raises:
-            RuntimeError: If there is no running database session.
-        """
-        if self._running_session is None:
-            raise RuntimeError("No running database session")
-        return self.with_context({**self.context, "session": self._running_session})
+    @property
+    def is_default(self) -> bool:
+        return self.context.get("_is_default", False)

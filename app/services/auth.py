@@ -134,4 +134,6 @@ class AuthorizationService(BaseService):
         return user, *token_pair
 
 
-auth_service = AuthorizationService(async_session_factory)
+auth_service = AuthorizationService(
+    async_session_factory, context={"_is_default": True}
+)

@@ -95,7 +95,6 @@ def create_app() -> Sanic:
             req: The incoming request object.
             res: The outgoing response object.
         """
-        print("allowing cors")
         res.headers["Access-Control-Allow-Origin"] = "*"
 
     @app.after_server_start

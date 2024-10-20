@@ -162,6 +162,9 @@ def pydantic_response(func: Callable):
     @wraps(func)
     async def decorator(*args, **kwargs):
         response = await func(*args, **kwargs)
+        if isinstance(response, tuple):
+            model, status_code = response
+            return json(model.model_dump(), status=status_code)
         return json(response.model_dump())
 
     return decorator

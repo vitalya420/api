@@ -138,7 +138,8 @@ class TokenService(BaseService):
         Returns:
             Tuple[AccessToken, RefreshToken]: A tuple containing the newly created AccessToken and RefreshToken instances.
         """
-        async with self.get_repo() as tokens_repo:
+        _isolated_service = self.isolate()
+        async with _isolated_service.get_repo() as tokens_repo:
             # Revoke access and refresh tokens
             # And delete it from cache
             access, refresh = await tokens_repo.refresh_revoke(refresh_jti)
@@ -146,7 +147,7 @@ class TokenService(BaseService):
             await asyncio.gather(
                 self.cache_delete_object(access), self.cache_delete_object(refresh)
             )
-            return await self.reuse_session().create_tokens(
+            return await _isolated_service.create_tokens(
                 user_id=access.user_id,
                 request=request,
                 realm=access.realm,
@@ -204,4 +205,4 @@ class TokenService(BaseService):
                 return access, access.refresh_token
 
 
-tokens_service = TokenService(async_session_factory)
+tokens_service = TokenService(async_session_factory, context={"_is_default": True})

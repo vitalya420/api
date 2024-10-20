@@ -101,4 +101,4 @@ class UserService(BaseService):
             await user_repo.set_user_password(phone, password)
 
 
-user_service = UserService(async_session_factory)
+user_service = UserService(async_session_factory, context={"_is_default": True})

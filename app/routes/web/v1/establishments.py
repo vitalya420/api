@@ -79,7 +79,10 @@ async def create_establishment(request: ApiRequest, body: EstablishmentCreate):
     secured={"token": []},
 )
 @rules(login_required)
-async def update_establishment(request: ApiRequest, establishment_id: int):
+@validate(EstablishmentUpdate)
+async def update_establishment(
+    request: ApiRequest, est_id: int, body: EstablishmentUpdate
+):
     pass
 
 
@@ -121,3 +124,8 @@ async def delete_establishment(request: ApiRequest, est_id: int):
     if deleted:
         return SuccessResponse(message=f"Establishments '{deleted.id}' deleted")
     raise NotFound(f"Establishment with id {est_id} not found")
+
+
+@establishments.patch("/<est_id>/schedule")
+async def set_work_schedule(request: ApiRequest, est_id: int):
+    pass

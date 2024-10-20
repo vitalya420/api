@@ -220,10 +220,11 @@ class BusinessService(BaseService):
         lat: Optional[float] = None,
         image: Optional[str] = None,
     ):
-        async with self.get_repo(EstablishmentRepository) as est_repo:
+        _isolated_service = self.isolate()
+        async with _isolated_service.get_repo(EstablishmentRepository) as est_repo:
             est_repo: EstablishmentRepository
             business = (
-                await self.reuse_session().get_business(business)
+                await _isolated_service.get_business(business)
                 if isinstance(business, str)
                 else business
             )
@@ -253,12 +254,13 @@ class BusinessService(BaseService):
             return await est_repo.get_establishment(est_id)
 
     async def delete_establishment(self, owner: Union[User, int], est_id: int):
-        async with self.get_repo(EstablishmentRepository) as est_repo:
+        isolated = self.isolate()
+        async with isolated.get_repo(EstablishmentRepository) as est_repo:
             est_repo: EstablishmentRepository
             est = await est_repo.get_establishment(est_id)
             if est and est.business.owner_id == force_id(owner):
                 await self.cache_delete_object(est.business)
-                await self.get_running_session().delete(est)
+                await isolated.get_running_session().delete(est)
             if isinstance(owner, User):
                 await self.cache_delete_object(owner)
             elif isinstance(owner, int):
@@ -266,5 +268,14 @@ class BusinessService(BaseService):
 
         return est
 
+    async def set_business_image(
+        self, business: Union[Business, str], image_url: Union[str, None]
+    ):
+        async with self.get_repo() as repo:
+            repo: BusinessRepository
+            business = await repo.get_business(force_code(business))
+            business.image = image_url
+        return business
 
-business_service = BusinessService(async_session_factory)
+
+business_service = BusinessService(async_session_factory, context={"_is_default": True})

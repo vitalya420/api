@@ -112,4 +112,4 @@ class OTPService(BaseService):
             return await otp_repo.set_code_used(pk)
 
 
-otp_service = OTPService(async_session_factory)
+otp_service = OTPService(async_session_factory, context={"_is_default": True})

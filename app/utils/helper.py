@@ -1,8 +1,9 @@
 import random
 import re
 import string
-from typing import Protocol, Union
+from typing import Protocol, Union, Type
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Mapped
 
 
@@ -171,3 +172,7 @@ def random_string_code(length: int = 12) -> str:
         'ABCDE'  # Example output, actual output will vary
     """
     return "".join(random.choice(string.ascii_uppercase) for _ in range(length))
+
+
+def openapi_json_schema(model: Type[BaseModel]):
+    return model.model_json_schema(ref_template="#/components/schemas/{model}")

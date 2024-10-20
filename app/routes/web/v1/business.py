@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+from PIL import UnidentifiedImageError
 from sanic import Blueprint, BadRequest, NotFound, Forbidden
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
@@ -14,8 +15,11 @@ from app.schemas import (
     ListBusinessClientResponse,
     BusinessClientPaginatedRequest,
     BusinessUpdate,
+    FileUploadRequest,
 )
 from app.services import business_service, user_service
+from app.utils import openapi_json_schema
+from app.utils.files_helper import save_image_from_request
 
 business = Blueprint("web-business", url_prefix="/business")
 
@@ -43,9 +47,7 @@ business = Blueprint("web-business", url_prefix="/business")
         """
     ),
     response={
-        "application/json": BusinessResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        ),
+        "application/json": openapi_json_schema(BusinessResponse),
     },
     secured={"token": []},
 )
@@ -101,16 +103,12 @@ async def get_business(request: ApiRequest):
         """
     ),
     body={
-        "application/json": BusinessCreate.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
+        "application/json": openapi_json_schema(BusinessCreate),
     },
     response=[
         Response(
             {
-                "application/json": BusinessResponse.model_json_schema(
-                    ref_template="#/components/schemas/{model}"
-                )
+                "application/json": openapi_json_schema(BusinessResponse),
             }
         )
     ],
@@ -147,7 +145,7 @@ async def create_business(request: ApiRequest, body: BusinessCreate):
 
 @business.patch("/")
 @openapi.definition(
-    body={"application/json": BusinessUpdate.model_json_schema()},
+    body={"application/json": openapi_json_schema(BusinessUpdate)},
     secured={"token": []},
 )
 @login_required
@@ -175,9 +173,7 @@ async def update_business(request: ApiRequest, body: BusinessUpdate):
         Parameter("staff_only", bool, "query"),
     ],
     response={
-        "application/json": BusinessResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        ),
+        "application/json": openapi_json_schema(BusinessResponse),
     },
     secured={"token": []},
 )
@@ -203,3 +199,59 @@ async def get_business_clients(
         total=clients_total,
         clients=clients,
     )
+
+
+@business.post("/image")
+@openapi.definition(
+    description=dedent(
+        """
+        Update business image with a new one.
+        """
+    ),
+    body={
+        "multipart/form-data": openapi_json_schema(FileUploadRequest),
+    },
+    response={
+        "application/json": openapi_json_schema(BusinessResponse),
+    },
+    secured={"token": []},
+)
+@login_required
+@pydantic_response
+async def upload_business_image(request: ApiRequest):
+    try:
+        image_url = await save_image_from_request(request)
+        updated = await business_service.set_business_image(
+            (await request.get_user()).business, image_url
+        )
+        return BusinessResponse.model_validate(updated)
+    except UnidentifiedImageError:
+        return BadRequest("This is not an image")
+    except KeyError:
+        return BadRequest("Where is image?")
+    except Exception:
+        raise BadRequest("Something went wrong")
+
+
+@business.delete("/image")
+@openapi.definition(
+    description=dedent(
+        """
+        Delete business image
+        """
+    ),
+    response={
+        "application/json": openapi_json_schema(BusinessResponse),
+    },
+    secured={"token": []},
+)
+@login_required
+@pydantic_response
+async def delete_business_image(request: ApiRequest):
+    try:
+        updated = await business_service.set_business_image(
+            (await request.get_user()).business, None
+        )
+        return BusinessResponse.model_validate(updated)
+    except Exception:
+        raise BadRequest("Something went wrong")
