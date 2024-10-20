@@ -35,7 +35,7 @@ from .tokens import (
 from .user import UserResponse, WebUserResponse
 from .base import SuccessResponse
 from .file import FileUploadRequest
-from .work_schedule import WorkScheduleCreate, WorkScheduleUpdate, WorkScheduleCopy
+from .work_schedule import WorkScheduleCreate, WorkScheduleUpdate, WorkScheduleCopy, WorkScheduleDay
 
 __all__ = [
     "AuthRequest",
@@ -69,6 +69,7 @@ __all__ = [
     "WorkScheduleCreate",
     "WorkScheduleUpdate",
     "WorkScheduleCopy",
+    "WorkScheduleDay"
 ]
 
 

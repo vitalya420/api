@@ -11,9 +11,10 @@ from app.schemas import (
     EstablishmentResponse,
     EstablishmentUpdate,
     FileUploadRequest,
-    SuccessResponse,
+    SuccessResponse, WorkScheduleCreate, WorkScheduleDay,
 )
 from app.services import business_service
+from app.utils import openapi_json_schema
 from app.utils.files_helper import save_image_from_request
 
 establishments = Blueprint("web-establishments", url_prefix="/establishments")
@@ -127,5 +128,15 @@ async def delete_establishment(request: ApiRequest, est_id: int):
 
 
 @establishments.patch("/<est_id>/schedule")
-async def set_work_schedule(request: ApiRequest, est_id: int):
-    pass
+@openapi.definition(
+    body={"application/json": openapi_json_schema(WorkScheduleCreate)},
+    secured={"token": []},
+)
+@login_required
+@validate(WorkScheduleCreate)
+@pydantic_response
+async def set_work_schedule(request: ApiRequest, est_id: int, body: WorkScheduleDay):
+    await business_service.set_work_schedule(
+        est_id, **body.model_dump()
+    )
+    return body

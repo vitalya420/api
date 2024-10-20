@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.base import BaseService
 from app.db import async_session_factory
+from app.enums import DayOfWeek
 from app.exceptions import UnableToCreateBusiness
 from app.models import Business, User, Client, Establishment
 from app.repositories import BusinessRepository
@@ -275,7 +276,15 @@ class BusinessService(BaseService):
             repo: BusinessRepository
             business = await repo.get_business(force_code(business))
             business.image = image_url
+            await asyncio.gather(
+                self.cache_delete(Business.lookup_key(business.code), User.lookup_key(business.owner_id)), # noqa
+            )
         return business
+
+    async def set_work_schedule(self, est_id: int, **schedule):
+        for day, day_schedule in schedule.items():
+            day = DayOfWeek(day)
+            print(day, day_schedule)
 
 
 business_service = BusinessService(async_session_factory, context={"_is_default": True})
