@@ -28,6 +28,7 @@ class IssuedTokenResponse(BaseModel):
     user_agent: str
     business_code: Optional[str] = None
     issued_at: str
+    revoked: bool
 
     class Config:
         from_attributes = True

@@ -89,7 +89,8 @@ class SessionManagementMixin(ABC):
                 async with session.begin():
                     self.context["session"] = session
                     yield session
-                    self.context.pop("session")
+                    if "session" in self.context:
+                        self.context.pop("session")
 
     def with_context(self, context: Dict[Any, Any]) -> Self:
         """

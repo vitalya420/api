@@ -135,6 +135,8 @@ class TokensRepository(BaseRepository):
         and_clause = and_(
             AccessToken.user_id == user_id,
             AccessToken.realm == realm,
+            AccessToken.revoked == False,
+            AccessToken.expires_at >= datetime.utcnow(),
         )
 
         if realm == Realm.mobile:
@@ -186,3 +188,23 @@ class TokensRepository(BaseRepository):
         refresh_token.revoked = True
         refresh_token.access_token.revoked = True
         return refresh_token.access_token, refresh_token
+
+    async def revoke_all_tokens(self, user_id: int, realm: Realm):
+        query = (
+            select(AccessToken)
+            .where(
+                and_(
+                    AccessToken.user_id == user_id,
+                    AccessToken.realm == realm,
+                    AccessToken.revoked == False,
+                    AccessToken.expires_at >= datetime.utcnow(),
+                ),
+            )
+            .options(joinedload(AccessToken.refresh_token))
+        )
+        result = await self.session.execute(query)
+        tokens = result.scalars().all()
+        for token in tokens:
+            token.revoked = True
+            token.refresh_token.revoked = True
+        return tokens

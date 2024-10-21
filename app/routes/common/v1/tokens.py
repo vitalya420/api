@@ -209,3 +209,19 @@ async def revoke_token(request: ApiRequest, jti: str):
     if revoked:
         return SuccessResponse(message="Token has been revoked.")
     raise BadRequest
+
+
+@tokens.post("/revoke-all")
+@openapi.definition(
+    description=dedent(
+        """
+        Logout from all devices
+        """
+    ),
+    secured={"token": []},
+)
+@login_required
+@pydantic_response
+async def revoke_all_tokens(request: ApiRequest):
+    await tokens_service.revoke_all_tokens(await request.get_user(), request.realm)
+    return SuccessResponse(message="Tokens have been revoked.")

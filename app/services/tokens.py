@@ -47,7 +47,7 @@ class TokenService(BaseService):
     async def get_access_token(
         self, jti: str, alive_only: bool = True, use_cache: bool = True
     ) -> Union[AccessToken, None]:
-        """
+        """revoke_all_tokens
         Retrieve an access token by its unique identifier (JTI).
 
         This method queries the repository for an AccessToken instance that matches the provided JTI.
@@ -203,6 +203,14 @@ class TokenService(BaseService):
                     self.cache_delete_object(access.refresh_token),
                 )
                 return access, access.refresh_token
+
+    async def revoke_all_tokens(self, user: Union[User, int], realm: Realm):
+        async with self.get_repo() as tokens_repo:
+            revoked = await tokens_repo.revoke_all_tokens(force_id(user), realm)
+            await asyncio.gather(
+                *[self.cache_delete_object(revoked_token) for revoked_token in revoked]
+            )
+        return len(revoked)
 
 
 tokens_service = TokenService(async_session_factory, context={"_is_default": True})

@@ -11,16 +11,18 @@ from app.schemas import (
     EstablishmentResponse,
     EstablishmentUpdate,
     FileUploadRequest,
-    SuccessResponse, WorkScheduleCreate, WorkScheduleDay,
+    SuccessResponse,
+    WorkScheduleCreate,
+    WorkScheduleDay,
 )
-from app.services import business_service
+from app.services import establishment_service
 from app.utils import openapi_json_schema
 from app.utils.files_helper import save_image_from_request
 
-establishments = Blueprint("web-establishments", url_prefix="/establishments")
+establishment = Blueprint("web-establishments", url_prefix="/establishments")
 
 
-@establishments.get("/")
+@establishment.get("/")
 @openapi.definition(
     response={
         "application/json": EstablishmentsResponse.model_json_schema(
@@ -37,7 +39,7 @@ async def get_establishments(request: ApiRequest):
     return EstablishmentsResponse(establishments=establishments)
 
 
-@establishments.post("/")
+@establishment.post("/")
 @openapi.definition(
     body={
         "application/json": EstablishmentCreate.model_json_schema(
@@ -56,7 +58,7 @@ async def get_establishments(request: ApiRequest):
 @pydantic_response
 async def create_establishment(request: ApiRequest, body: EstablishmentCreate):
     user = await request.get_user()
-    created = await business_service.create_establishment(
+    created = await establishment_service.create_establishment(
         user.business,
         body.address,
         long=body.longitude,
@@ -65,7 +67,7 @@ async def create_establishment(request: ApiRequest, body: EstablishmentCreate):
     return EstablishmentResponse.model_validate(created)
 
 
-@establishments.patch("/<est_id>")
+@establishment.patch("/<est_id>")
 @openapi.definition(
     body={
         "application/json": EstablishmentUpdate.model_json_schema(
@@ -87,7 +89,7 @@ async def update_establishment(
     pass
 
 
-@establishments.post("/<est_id>/image")
+@establishment.post("/<est_id>/image")
 @openapi.definition(
     body={
         "multipart/form-data": FileUploadRequest.model_json_schema(
@@ -101,8 +103,8 @@ async def update_establishment(
 async def update_establishment_image(request: ApiRequest, est_id: int):
     try:
         image_url = await save_image_from_request(request)
-        updated = await business_service.update_establishment_image(
-            await request.get_user(), est_id, image_url
+        updated = await establishment_service.set_establishment_image(
+            est_id, await request.get_user(), image_url
         )
         if updated is None:
             raise NotFound(f"Establishment with id {est_id} not found")
@@ -113,13 +115,13 @@ async def update_establishment_image(request: ApiRequest, est_id: int):
         return BadRequest("Where is image?")
 
 
-@establishments.delete("/<est_id>")
+@establishment.delete("/<est_id>")
 @openapi.definition(
     secured={"token": []},
 )
 @pydantic_response
 async def delete_establishment(request: ApiRequest, est_id: int):
-    deleted = await business_service.delete_establishment(
+    deleted = await establishment_service.delete_establishment(
         await request.get_user(), est_id
     )
     if deleted:
@@ -127,7 +129,7 @@ async def delete_establishment(request: ApiRequest, est_id: int):
     raise NotFound(f"Establishment with id {est_id} not found")
 
 
-@establishments.patch("/<est_id>/schedule")
+@establishment.patch("/<est_id>/schedule")
 @openapi.definition(
     body={"application/json": openapi_json_schema(WorkScheduleCreate)},
     secured={"token": []},
@@ -136,7 +138,5 @@ async def delete_establishment(request: ApiRequest, est_id: int):
 @validate(WorkScheduleCreate)
 @pydantic_response
 async def set_work_schedule(request: ApiRequest, est_id: int, body: WorkScheduleDay):
-    await business_service.set_work_schedule(
-        est_id, **body.model_dump()
-    )
+    await establishment_service.set_work_schedule(est_id, **body.model_dump())
     return body

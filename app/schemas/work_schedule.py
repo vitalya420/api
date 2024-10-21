@@ -7,8 +7,8 @@ from app.enums import DayOfWeek
 
 
 def _validate_time(value):
-    if isinstance(value, str) and ':' in value:
-        hours, minutes = value.split(':')
+    if isinstance(value, str) and ":" in value:
+        hours, minutes = value.split(":")
         return time(int(hours), int(minutes))
     return None
 
@@ -36,7 +36,7 @@ class WorkScheduleDay(BaseModel):
     def format_open_time(cls, value):
         return _validate_time(value)
 
-    @field_validator("lunch_break_end", mode="before") # noqa
+    @field_validator("lunch_break_end", mode="before")  # noqa
     @classmethod
     def format_open_time(cls, value):
         return _validate_time(value)
