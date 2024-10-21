@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Optional, Union, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.base import BaseRepository
-from app.models import Establishment, Address, Business
+from app.models import Establishment, Address, Business, EstablishmentWorkSchedule
 
 
 class EstablishmentRepository(BaseRepository):
@@ -31,16 +31,49 @@ class EstablishmentRepository(BaseRepository):
         await self.session.flush()
         return instance
 
-    async def get_establishment(self, est_id: int) -> Establishment:
+    async def get_establishment(self, est_id: int) -> Union[Establishment, None]:
         query = (
             select(Establishment)
             .where(Establishment.id == est_id)
             .options(
-                joinedload(Establishment.address), joinedload(Establishment.business)
+                joinedload(Establishment.address),
+                joinedload(Establishment.business),
+                joinedload(Establishment.work_schedule).options(
+                    joinedload(EstablishmentWorkSchedule.monday_schedule),
+                    joinedload(EstablishmentWorkSchedule.tuesday_schedule),
+                    joinedload(EstablishmentWorkSchedule.wednesday_schedule),
+                    joinedload(EstablishmentWorkSchedule.thursday_schedule),
+                    joinedload(EstablishmentWorkSchedule.friday_schedule),
+                    joinedload(EstablishmentWorkSchedule.saturday_schedule),
+                    joinedload(EstablishmentWorkSchedule.sunday_schedule),
+                ),
             )
         )
         res = await self.session.execute(query)
         return res.scalars().first()
+
+    async def get_business_establishments(
+        self, business_code: str
+    ) -> Sequence[Establishment]:
+        query = (
+            select(Establishment)
+            .where(Establishment.business_code == business_code)
+            .options(
+                joinedload(Establishment.address),
+                joinedload(Establishment.business),
+                joinedload(Establishment.work_schedule).options(
+                    joinedload(EstablishmentWorkSchedule.monday_schedule),
+                    joinedload(EstablishmentWorkSchedule.tuesday_schedule),
+                    joinedload(EstablishmentWorkSchedule.wednesday_schedule),
+                    joinedload(EstablishmentWorkSchedule.thursday_schedule),
+                    joinedload(EstablishmentWorkSchedule.friday_schedule),
+                    joinedload(EstablishmentWorkSchedule.saturday_schedule),
+                    joinedload(EstablishmentWorkSchedule.sunday_schedule),
+                ),
+            )
+        )
+        res = await self.session.execute(query)
+        return res.scalars().all()
 
     async def update_establishment_image(self, user_id: int, est_id: int, image: str):
         query = (

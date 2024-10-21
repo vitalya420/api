@@ -7,7 +7,7 @@ from app.utils import MAX_STRING_LENGTH
 
 if TYPE_CHECKING:
     from app.models.business import Business
-    from app.models.work_schedule import WorkSchedule
+    from app.models.work_schedule import EstablishmentWorkSchedule
 
 
 class Address(BaseModelWithID):
@@ -42,8 +42,11 @@ class Establishment(BaseModelWithID):
     business: Mapped["Business"] = relationship(
         "Business", back_populates="establishments"
     )
-    work_schedules: Mapped[List["WorkSchedule"]] = relationship(
-        "WorkSchedule", back_populates="establishment", cascade="all, delete-orphan"
+    work_schedule: Mapped["EstablishmentWorkSchedule"] = relationship(
+        "EstablishmentWorkSchedule",
+        back_populates="establishment",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
     def __repr__(self):

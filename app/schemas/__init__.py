@@ -40,6 +40,7 @@ from .work_schedule import (
     WorkScheduleUpdate,
     WorkScheduleCopy,
     WorkScheduleDay,
+    WorkScheduleResponse,
 )
 
 __all__ = [
@@ -75,6 +76,7 @@ __all__ = [
     "WorkScheduleUpdate",
     "WorkScheduleCopy",
     "WorkScheduleDay",
+    "WorkScheduleResponse",
 ]
 
 

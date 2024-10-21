@@ -3,6 +3,8 @@ from typing import List
 from pydantic import BaseModel, model_validator
 from typing_extensions import Optional
 
+from app.schemas.work_schedule import WorkScheduleResponse
+
 
 class EstablishmentBase(BaseModel):
     name: str
@@ -44,6 +46,7 @@ class EstablishmentResponse(EstablishmentBase):
     name: str
     image: Optional[str] = None
     address: Optional[EstablishmentAddress] = None
+    work_schedule: Optional[WorkScheduleResponse] = None
 
     class Config:
         from_attributes = True

@@ -35,7 +35,9 @@ establishment = Blueprint("web-establishments", url_prefix="/establishments")
 @pydantic_response
 async def get_establishments(request: ApiRequest):
     user = await request.get_user()
-    establishments = user.business.establishments
+    establishments = await establishment_service.get_business_establishments(
+        user.business
+    )
     return EstablishmentsResponse(establishments=establishments)
 
 
@@ -87,7 +89,9 @@ async def create_establishment(request: ApiRequest, body: EstablishmentCreate):
 async def update_establishment(
     request: ApiRequest, est_id: int, body: EstablishmentUpdate
 ):
-    updated = await establishment_service.update_establishment(est_id, **body.model_dump())
+    updated = await establishment_service.update_establishment(
+        est_id, **body.model_dump()
+    )
     return EstablishmentResponse.model_validate(updated)
 
 
@@ -140,5 +144,5 @@ async def delete_establishment(request: ApiRequest, est_id: int):
 @validate(WorkScheduleCreate)
 @pydantic_response
 async def set_work_schedule(request: ApiRequest, est_id: int, body: WorkScheduleDay):
-    await establishment_service.set_work_schedule(est_id, **body.model_dump())
-    return body
+    ret = await establishment_service.set_work_schedule(est_id, **body.model_dump())
+    return EstablishmentResponse.model_validate(ret)

@@ -90,7 +90,8 @@ class UserRepository(BaseRepository):
             .options(
                 joinedload(User.business).options(
                     joinedload(Business.establishments).options(
-                        joinedload(Establishment.address)
+                        joinedload(Establishment.address),
+                        joinedload(Establishment.work_schedule),
                     ),
                     joinedload(Business.owner),
                 )

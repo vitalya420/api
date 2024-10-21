@@ -1,18 +1,27 @@
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 
 from app.base import BaseService
 from app.db import async_session_factory
-from app.enums import DayOfWeek
-from app.models import User, Business
+from app.models import User, Business, Address, Establishment, EstablishmentWorkSchedule
+from app.models.work_schedule import DayScheduleInfo
 from app.repositories.establishment import EstablishmentRepository
-from app.utils import force_id
+from app.utils import force_id, force_code
 
 
 class EstablishmentService(BaseService):
     __repository_class__ = EstablishmentRepository
 
-    async def get_establishment(self, pk: int):
-        pass
+    async def get_establishment(self, pk: int) -> Union[Establishment, None]:
+        async with self.get_repo() as repo:
+            instance = await repo.get_establishment(pk)
+        return instance
+
+    async def get_business_establishments(
+        self, business: Union[Business, str]
+    ) -> Sequence[Establishment]:
+        async with self.get_repo() as repo:
+            instances = await repo.get_business_establishments(force_code(business))
+        return instances
 
     async def create_establishment(
         self,
@@ -40,8 +49,13 @@ class EstablishmentService(BaseService):
         async with self.get_repo() as repo:
             repo: EstablishmentRepository = repo
             est = await repo.get_establishment(pk)
-            for key, value in new_data.items():
-                setattr(est.address, key, value)
+            if est.address is None:
+                address = Address(**new_data)
+                repo.session.add(address)
+                await repo.session.flush()
+            else:
+                for key, value in new_data.items():
+                    setattr(est.address, key, value)
         return est
 
     async def set_establishment_image(
@@ -73,9 +87,31 @@ class EstablishmentService(BaseService):
         return est
 
     async def set_work_schedule(self, pk: int, **schedule):
-        for day, day_schedule in schedule.items():
-            day = DayOfWeek(day)
-            print(day, day_schedule)
+        async with self.get_session() as session:
+            contexted = self.with_context({"session": session})
+            establishment = await contexted.get_establishment(pk)
+            if establishment is None:
+                return
+
+            if establishment.work_schedule is None:
+                day_schedules = {}
+                for day, day_schedule in schedule.items():
+                    instance = DayScheduleInfo(**day_schedule)
+                    day_schedules[f"{day}_schedule"] = instance
+                schedule = EstablishmentWorkSchedule(
+                    establishment_id=pk, **day_schedules
+                )
+                session.add_all([schedule, *day_schedules.values()])
+            else:
+                for day, day_schedule in schedule.items():
+                    existed_instance = getattr(
+                        establishment.work_schedule, f"{day}_schedule"
+                    )
+                    for k, v in day_schedule.items():
+                        setattr(existed_instance, k, v)
+                    session.add(existed_instance)
+            est = await contexted.get_establishment(pk)
+        return est
 
 
 establishment_service = EstablishmentService(

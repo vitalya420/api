@@ -25,9 +25,12 @@ async def main():
     # await business_service.create_business("Naggers Shop",
     #                                        (await user_service.get_user(phone="+380956409567")).id)
 
-    await business_service.create_establishment("JAJLAVWWCMVCMTMH", address='america', long=13.13, lat=44.44),
-    user = await user_service.get_user(phone='+380956409567', use_cache=False)
+    await business_service.create_establishment(
+        "JAJLAVWWCMVCMTMH", address="america", long=13.13, lat=44.44
+    ),
+    user = await user_service.get_user(phone="+380956409567", use_cache=False)
     pprint(BusinessResponse.model_validate(user.business).model_dump())
+
 
 if __name__ == "__main__":
     asyncio.run(main())

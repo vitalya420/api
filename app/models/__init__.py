@@ -8,4 +8,4 @@ from .position import MenuPosition
 from .token import AccessToken, RefreshToken
 from .user import User
 from .establisment import Establishment, Address
-from .work_schedule import WorkSchedule
+from .work_schedule import EstablishmentWorkSchedule, DayScheduleInfo
