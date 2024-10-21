@@ -83,10 +83,12 @@ async def create_establishment(request: ApiRequest, body: EstablishmentCreate):
 )
 @rules(login_required)
 @validate(EstablishmentUpdate)
+@pydantic_response
 async def update_establishment(
     request: ApiRequest, est_id: int, body: EstablishmentUpdate
 ):
-    pass
+    updated = await establishment_service.update_establishment(est_id, **body.model_dump())
+    return EstablishmentResponse.model_validate(updated)
 
 
 @establishment.post("/<est_id>/image")

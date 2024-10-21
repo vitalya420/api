@@ -36,8 +36,13 @@ class EstablishmentService(BaseService):
             )
         return created
 
-    async def update_establishment(self, pk: int, **data):
-        pass
+    async def update_establishment(self, pk: int, **new_data):
+        async with self.get_repo() as repo:
+            repo: EstablishmentRepository = repo
+            est = await repo.get_establishment(pk)
+            for key, value in new_data.items():
+                setattr(est.address, key, value)
+        return est
 
     async def set_establishment_image(
         self, est_id: int, owner: Union[User, int], image_url: str
