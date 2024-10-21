@@ -1,7 +1,11 @@
+from http import HTTPStatus
+from textwrap import dedent
+
 from PIL import UnidentifiedImageError
 from sanic import Blueprint, BadRequest, NotFound
 from sanic_ext import validate
 from sanic_ext.extensions.openapi import openapi
+from sanic_ext.extensions.openapi.definitions import Response
 
 from app.decorators import login_required, pydantic_response, rules
 from app.request import ApiRequest
@@ -24,10 +28,13 @@ establishment = Blueprint("web-establishments", url_prefix="/establishments")
 
 @establishment.get("/")
 @openapi.definition(
+    description=dedent(
+        """
+        ## List all establishments of business
+        """
+    ),
     response={
-        "application/json": EstablishmentsResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        ),
+        "application/json": openapi_json_schema(EstablishmentsResponse),
     },
     secured={"token": []},
 )
@@ -43,16 +50,16 @@ async def get_establishments(request: ApiRequest):
 
 @establishment.post("/")
 @openapi.definition(
-    body={
-        "application/json": EstablishmentCreate.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
-    },
-    response={
-        "application/json": EstablishmentResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
-    },
+    description=dedent(
+        """
+        ## Create a new establishment
+        """
+    ),
+    body={"application/json": openapi_json_schema(EstablishmentCreate)},
+    response=Response(
+        {"application/json": openapi_json_schema(EstablishmentResponse)},
+        status=HTTPStatus.CREATED,
+    ),
     secured={"token": []},
 )
 @login_required
@@ -66,20 +73,21 @@ async def create_establishment(request: ApiRequest, body: EstablishmentCreate):
         long=body.longitude,
         lat=body.latitude,
     )
-    return EstablishmentResponse.model_validate(created)
+    return EstablishmentResponse.model_validate(created), HTTPStatus.CREATED
 
 
 @establishment.patch("/<est_id>")
 @openapi.definition(
+    description=dedent(
+        """
+        Update existing establishment
+        """
+    ),
     body={
-        "application/json": EstablishmentUpdate.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
+        "application/json": openapi_json_schema(EstablishmentUpdate),
     },
     response={
-        "application/json": EstablishmentResponse.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
+        "application/json": openapi_json_schema(EstablishmentResponse),
     },
     secured={"token": []},
 )
@@ -98,9 +106,7 @@ async def update_establishment(
 @establishment.post("/<est_id>/image")
 @openapi.definition(
     body={
-        "multipart/form-data": FileUploadRequest.model_json_schema(
-            ref_template="#/components/schemas/{model}"
-        )
+        "multipart/form-data": openapi_json_schema(FileUploadRequest),
     },
     secured={"token": []},
 )
@@ -123,6 +129,14 @@ async def update_establishment_image(request: ApiRequest, est_id: int):
 
 @establishment.delete("/<est_id>")
 @openapi.definition(
+    description=dedent(
+        """
+        ## Delete existing establishment
+        """
+    ),
+    response={
+        "application/json": openapi_json_schema(SuccessResponse),
+    },
     secured={"token": []},
 )
 @pydantic_response
@@ -138,6 +152,7 @@ async def delete_establishment(request: ApiRequest, est_id: int):
 @establishment.patch("/<est_id>/schedule")
 @openapi.definition(
     body={"application/json": openapi_json_schema(WorkScheduleCreate)},
+    response={"application/json": openapi_json_schema(EstablishmentResponse)},
     secured={"token": []},
 )
 @login_required
@@ -146,3 +161,14 @@ async def delete_establishment(request: ApiRequest, est_id: int):
 async def set_work_schedule(request: ApiRequest, est_id: int, body: WorkScheduleDay):
     ret = await establishment_service.set_work_schedule(est_id, **body.model_dump())
     return EstablishmentResponse.model_validate(ret)
+
+
+@establishment.delete("/<est_id>/schedule")
+@openapi.definition(
+    secured={"token": []},
+)
+@login_required
+@pydantic_response
+async def delete_establishment_schedule(request: ApiRequest, est_id: int):
+    await establishment_service.user_deletes_schedule(await request.get_user(), est_id)
+    return SuccessResponse(message=f"Fuck yeah")

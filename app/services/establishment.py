@@ -1,5 +1,7 @@
 from typing import Union, Optional, Sequence
 
+from sanic import NotFound
+
 from app.base import BaseService
 from app.db import async_session_factory
 from app.models import User, Business, Address, Establishment, EstablishmentWorkSchedule
@@ -112,6 +114,17 @@ class EstablishmentService(BaseService):
                     session.add(existed_instance)
             est = await contexted.get_establishment(pk)
         return est
+
+    async def user_deletes_schedule(self, user: Union[User, int], est_id: int):
+        async with self.get_session() as session:
+            contexted = self.with_context({"session": session})
+            establishment = await contexted.get_establishment(est_id)
+            if establishment and establishment.business.owner_id == force_id(
+                user
+            ):  # noqa
+                print("do delete")
+            else:
+                raise NotFound("No estimated with associated logged in user")
 
 
 establishment_service = EstablishmentService(
