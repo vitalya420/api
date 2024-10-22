@@ -3,7 +3,7 @@ from typing import Optional, Union
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from app.models import User, Business, Establishment
+from app.models import User, Business, Establishment, EstablishmentWorkSchedule
 from app.base import BaseRepository
 from app.exceptions import UserExists, YouAreRetardedError, UserDoesNotExist
 from app.repositories.business import BusinessRepository
@@ -91,7 +91,15 @@ class UserRepository(BaseRepository):
                 joinedload(User.business).options(
                     joinedload(Business.establishments).options(
                         joinedload(Establishment.address),
-                        joinedload(Establishment.work_schedule),
+                        joinedload(Establishment.work_schedule).options(
+                            joinedload(EstablishmentWorkSchedule.monday_schedule),
+                            joinedload(EstablishmentWorkSchedule.tuesday_schedule),
+                            joinedload(EstablishmentWorkSchedule.wednesday_schedule),
+                            joinedload(EstablishmentWorkSchedule.thursday_schedule),
+                            joinedload(EstablishmentWorkSchedule.friday_schedule),
+                            joinedload(EstablishmentWorkSchedule.saturday_schedule),
+                            joinedload(EstablishmentWorkSchedule.sunday_schedule),
+                        ),
                     ),
                     joinedload(Business.owner),
                 )

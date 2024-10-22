@@ -41,7 +41,7 @@ from .work_schedule import (
     WorkScheduleCopy,
     WorkScheduleDay,
     WorkScheduleResponse,
-    WorkScheduleDayResponse
+    WorkScheduleDayResponse,
 )
 
 __all__ = [
@@ -78,7 +78,7 @@ __all__ = [
     "WorkScheduleCopy",
     "WorkScheduleDay",
     "WorkScheduleResponse",
-    "WorkScheduleDayResponse"
+    "WorkScheduleDayResponse",
 ]
 
 for model in __all__:

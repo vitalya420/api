@@ -229,8 +229,8 @@ async def upload_business_image(request: ApiRequest):
         return BadRequest("This is not an image")
     except KeyError:
         return BadRequest("Where is image?")
-    except Exception:
-        raise BadRequest("Something went wrong")
+    except Exception as exc:
+        raise BadRequest(f"Something went wrong {exc}")
 
 
 @business.delete("/image")

@@ -17,7 +17,6 @@ class BusinessBase(BaseModel):
 
 class BusinessUpdate(BaseModel):
     name: Optional[str] = None
-    image: Optional[str] = None
     description: Optional[str] = None
 
 

@@ -159,7 +159,9 @@ async def delete_establishment(request: ApiRequest, est_id: int):
 @validate(WorkScheduleCreate)
 @pydantic_response
 async def set_work_schedule(request: ApiRequest, est_id: int, body: WorkScheduleDay):
-    ret = await establishment_service.set_work_schedule(est_id, **body.model_dump())
+    ret = await establishment_service.user_sets_work_schedule(
+        await request.get_user(), est_id, **body.model_dump()
+    )
     return EstablishmentResponse.model_validate(ret)
 
 

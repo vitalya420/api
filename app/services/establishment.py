@@ -112,8 +112,15 @@ class EstablishmentService(BaseService):
                     for k, v in day_schedule.items():
                         setattr(existed_instance, k, v)
                     session.add(existed_instance)
-            est = await contexted.get_establishment(pk)
-        return est
+
+    async def user_sets_work_schedule(
+        self, user: Union[User, int], pk: int, **schedule
+    ):
+        await self.set_work_schedule(pk, **schedule)
+        await self.cache_delete(
+            User.lookup_key(force_id(user)),
+        )
+        return await self.get_establishment(pk)
 
     async def user_deletes_schedule(self, user: Union[User, int], est_id: int):
         async with self.get_session() as session:

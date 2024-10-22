@@ -223,8 +223,10 @@ class BusinessService(BaseService):
             await asyncio.gather(
                 self.cache_delete(
                     Business.lookup_key(business.code),
+                ),
+                self.cache_delete(
                     User.lookup_key(business.owner_id),
-                ),  # noqa
+                ),
             )
         return business
 
