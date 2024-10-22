@@ -41,6 +41,7 @@ from .work_schedule import (
     WorkScheduleCopy,
     WorkScheduleDay,
     WorkScheduleResponse,
+    WorkScheduleDayResponse
 )
 
 __all__ = [
@@ -77,8 +78,8 @@ __all__ = [
     "WorkScheduleCopy",
     "WorkScheduleDay",
     "WorkScheduleResponse",
+    "WorkScheduleDayResponse"
 ]
-
 
 for model in __all__:
     locals_ = locals()

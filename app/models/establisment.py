@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Union
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship, Mapped
 
@@ -42,7 +42,7 @@ class Establishment(BaseModelWithID):
     business: Mapped["Business"] = relationship(
         "Business", back_populates="establishments"
     )
-    work_schedule: Mapped["EstablishmentWorkSchedule"] = relationship(
+    work_schedule: Mapped[Union["EstablishmentWorkSchedule", None]] = relationship(
         "EstablishmentWorkSchedule",
         back_populates="establishment",
         cascade="all, delete-orphan",

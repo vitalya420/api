@@ -119,10 +119,12 @@ class EstablishmentService(BaseService):
         async with self.get_session() as session:
             contexted = self.with_context({"session": session})
             establishment = await contexted.get_establishment(est_id)
-            if establishment and establishment.business.owner_id == force_id(
-                user
-            ):  # noqa
-                print("do delete")
+            if (
+                establishment
+                and establishment.business.owner_id == force_id(user)  # noqa
+                and establishment.work_schedule
+            ):
+                await session.delete(establishment.work_schedule)
             else:
                 raise NotFound("No estimated with associated logged in user")
 
